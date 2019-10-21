@@ -16,7 +16,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION cdms2 cdutil genutil esmpy fortran-compiler configobj paramiko xlutils seawater pytz cmocean basemap-data-hires matplotlib>=2.0 scipy
   - source activate test-environment
   - python setup.py install
-  - python setup.py build_ext --inplace
+  - LDFLAGS="-shared" python setup.py build_ext --inplace
   - export UVCDAT_ANONYMOUS_LOG=no
 
 
