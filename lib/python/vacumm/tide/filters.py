@@ -9,6 +9,8 @@ the time units between each coefficients.
 
     :ref:`user.tut.tide.filters`
 """
+from __future__ import division
+from __future__ import print_function
 # Copyright or © or Copr. Actimar/IFREMER (2011-2015)
 #
 #
@@ -41,6 +43,8 @@ the time units between each coefficients.
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
+from builtins import zip
+from past.utils import old_div
 import cdtime, numpy as N,MV2,cdms2,genutil.filters as F
 
 from vacumm.misc.axes import check_axis, check_axes, create_time
@@ -142,9 +146,9 @@ def generic(var,coefs,units='hours',get_tide=False,only_tide=False,filter_name='
     if check_regular:
         assert isregular(time), 'Your time axis seems not regular'
     dt = N.diff(time[:]).mean()
-    if not time.attributes.has_key('units'):
+    if 'units' not in time.attributes:
            time.units = 'hours since 1970-01-01'
-           print 'The time axis of your variable has no units. Assuming : '+time.units
+           print('The time axis of your variable has no units. Assuming : '+time.units)
     if not time.isTime():
         time.designateTime(calendar=cdtime.DefaultCalendar)
 
@@ -156,14 +160,14 @@ def generic(var,coefs,units='hours',get_tide=False,only_tide=False,filter_name='
     coefs_range = coefs_range1.value - coefs_range0.value
     coefs_dt = coefs_range0.add(1,units).value - coefs_range0.value
     if time_range < coefs_range:
-        raise Exception,'Your sample is shorter than the time range of your coefficients'
+        raise Exception('Your sample is shorter than the time range of your coefficients')
     nt = len(var)
 
     # Remap coefficients to data time axis
     tc = var.dtype.char
 #   print 'dt', dt
 #   print 'coefs_dt', coefs_dt
-    if abs((coefs_dt-dt)/dt) > 0.01:
+    if abs(old_div((coefs_dt-dt),dt)) > 0.01:
         oldx = cdms2.createAxis(N.arange(len(coefs))*coefs_dt)
         old_coefs = MV2.array(coefs, axes=[oldx])
         newx = cdms2.createAxis(N.arange(0.,max(oldx),dt))
@@ -186,10 +190,10 @@ def generic(var,coefs,units='hours',get_tide=False,only_tide=False,filter_name='
     if not only_tide:
         fvar.id = var.id+'_cotes'
         fvar.name = fvar.id
-        if var.attributes.has_key('long_name'):
+        if 'long_name' in var.attributes:
             fvar.long_name = 'Tide removed signal from '+var.long_name.lower()
         fvar.long_name_fr = 'Signal sans la maree'
-        if var.attributes.has_key('units'):
+        if 'units' in var.attributes:
             fvar.units = var.units
         fvar.setAxis(0,time)
         fvar.filter_coefficients = coefs
@@ -199,9 +203,9 @@ def generic(var,coefs,units='hours',get_tide=False,only_tide=False,filter_name='
         tvar = var-fvar
         tvar.id = 'tidal_'+var.id
         tvar.name = tvar.id
-        if var.attributes.has_key('long_name'):
+        if 'long_name' in var.attributes:
             tvar.long_name = 'Tidal signal from '+var.long_name.lower()
-        if var.attributes.has_key('units'):
+        if 'units' in var.attributes:
             tvar.units = var.units
         tvar.setAxis(0,time)
         tvar.filter_coefficients = coefs
@@ -290,10 +294,10 @@ def zeros(var, ref='mean',mean=None, getref=True, **kwargs):
             ret[:] = varref
     for i, i0 in enumerate(izeros):
         dv = vara[i0+1]-vara[i0]
-        zeros[i] = times[i0]*vara[i0+1]/dv - times[i0+1]*vara[i0]/dv
+        zeros[i] = old_div(times[i0]*vara[i0+1],dv) - old_div(times[i0+1]*vara[i0],dv)
         if getref and longref:
             dt = times[i0+1]-times[i0]
-            ret[i] = var_ref[i0]*vara[i0+1]/dv - var_ref[i0+1]*vara[i0]/dv
+            ret[i] = old_div(var_ref[i0]*vara[i0+1],dv) - old_div(var_ref[i0+1]*vara[i0],dv)
 
     # Format
     if not getref:
@@ -367,9 +371,9 @@ def extrema(var,ref='mean',mean=None,getmax=True,getmin=True,getsign=False,getid
 
     # Returned data
     if getidx:
-        ctime,var,idxmin = zip(*minima)
+        ctime,var,idxmin = list(zip(*minima))
         idxmin=N.array(idxmin)+1
-        ctime,var,idxmax = zip(*maxima)
+        ctime,var,idxmax = list(zip(*maxima))
         idxmax=N.array(idxmax)+1
 
     res = []
@@ -417,7 +421,7 @@ def _extremum_(func,ctime,i0,i,var,spline):
     return val,this_ctime
 
 def _extrema_var_(extrem,units=None,indices=False,**kwargs):
-    ctime,var,idx = zip(*extrem)
+    ctime,var,idx = list(zip(*extrem))
     if indices:
         mytime = cdms2.createAxis(idx)
         mytime.id = 'time_index'
@@ -429,7 +433,7 @@ def _extrema_var_(extrem,units=None,indices=False,**kwargs):
     var = cdms2.createVariable(var,copy=0)
     var.setMissing(1.e20)
     var.setAxis(0,mytime)
-    for att,val in kwargs.items():
+    for att,val in list(kwargs.items()):
         setattr(var,att,val)
     return var
 

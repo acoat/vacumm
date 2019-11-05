@@ -2,6 +2,8 @@
 """
 Provides a class to perform basic operations on marigraphic sea level data
 """
+from __future__ import print_function
+from __future__ import absolute_import
 # Copyright or © or Copr. Actimar/IFREMER (2011-2015)
 #
 # This software is a computer program whose purpose is to provide
@@ -33,6 +35,8 @@ Provides a class to perform basic operations on marigraphic sea level data
 #
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
+from builtins import str
+from builtins import object
 import numpy as N,numpy.ma as MA,cdms2 as cdms,MV2 as MV,cdtime
 from genutil import minmax
 from genutil.statistics import std as STD
@@ -51,10 +55,10 @@ _docs = dict(
 )
 
 
-for key, val in _docs.items():
+for key, val in list(_docs.items()):
     ss = '*'*(1+val.startswith('+'))
     _docs[key] = '- %(ss)s%(key)s%(ss)s: %(val)s' % dict(ss=ss, key=key, val=val)
-_docs['base'] = '\n\t\t\t'.join([_docs[key] for key in 'time_range', 'tide_filter'])
+_docs['base'] = '\n\t\t\t'.join([_docs[key] for key in ('time_range', 'tide_filter')])
 
 def _fmtdoc_(func):
 #   try:
@@ -145,13 +149,13 @@ class Marigraph(object):
             if isinstance(data, str):
                 # We start from a shom id
                 if verbose:
-                    print 'Searching for SHOM station "'+data+'"...'
-                    print '-'*80
+                    print('Searching for SHOM station "'+data+'"...')
+                    print('-'*80)
                 station = StationInfo(shom=data,**self._clean_kwargs(kwargs))
                 if station is None:
-                    print 'Not found'
-                    raise StandardError
-                if verbose: print '-'*80
+                    print('Not found')
+                    raise Exception
+                if verbose: print('-'*80)
                 shom = data
                 self.name = station.name
                 self.longitude = station.longitude
@@ -160,7 +164,7 @@ class Marigraph(object):
                 # We already have a station info
                 shom = data.shom
                 if shom is None:
-                    raise StandardError, 'Not a valid SHOM station'
+                    raise Exception('Not a valid SHOM station')
                 if data.nom is not None:
                     self.name = data.nom
                     self.longitude = data.longitude
@@ -196,7 +200,7 @@ class Marigraph(object):
             # Get some attributes
             for att in ['name','longitude','latitude']:
                 latt = 'station_'+att
-                if data.attributes.has_key(latt):
+                if latt in data.attributes:
                     setattr(self,att,getattr(data,latt))
 
         # Remove extrem values
@@ -210,9 +214,9 @@ class Marigraph(object):
 
         # Attributes
         self.data['base'] = data
-        if not self.data['base'].attributes.has_key('units'):
+        if 'units' not in self.data['base'].attributes:
             self.data['base'].units = 'm'
-        if not self.data['base'].attributes.has_key('long_name'):
+        if 'long_name' not in self.data['base'].attributes:
             self.data['base'].units = 'Sea level'
 
         # Real mean
@@ -277,7 +281,7 @@ class Marigraph(object):
             filter_func = getattr(filters, tide_filter)
             self.data['cotes'],self.data['tide'] = filter_func(self.data['anom'],get_tide=True)
             if self._verbose:
-                print 'Computed tide signal using %s filter' % tide_filter
+                print('Computed tide signal using %s filter' % tide_filter)
         self.tide_filter = tide_filter
 
 
@@ -304,7 +308,7 @@ class Marigraph(object):
             self.data[ex][:] += self._mean
 
         if self._verbose:
-            print 'Computed low and high tides'
+            print('Computed low and high tides')
 
 
 
@@ -411,7 +415,7 @@ class Marigraph(object):
     def _clean_kwargs(self,kwargs,bad = ['tide_filter']):
         kwargs = kwargs.copy()
         for kw in bad:
-            if kwargs.has_key(kw):
+            if kw in kwargs:
                 del kwargs[kw]
         return kwargs
 
@@ -447,7 +451,7 @@ class Marigraph(object):
         if var is not None:
             assert var in vtypes
             for vt in vtypes:
-                exec "%s = %s"%(vt, vt==var)
+                exec("%s = %s"%(vt, vt==var))
 
         # Plot params
         # - specific
@@ -531,7 +535,7 @@ class Marigraph(object):
 
 
 
-from station_info import StationInfo
+from .station_info import StationInfo
 from vacumm.misc.grid import bounds1d
 import vacumm.misc.atime as T, filters
 from vacumm.misc import kwfilter

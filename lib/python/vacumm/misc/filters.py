@@ -1,5 +1,7 @@
 # -*- coding: utf8 -*-
 """Various 1d and 2D filters"""
+from __future__ import division
+from __future__ import absolute_import
 
 # Copyright or © or Copr. Actimar/IFREMER (2010-2015)
 #
@@ -33,6 +35,9 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
 #
+from builtins import str
+from builtins import range
+from past.utils import old_div
 __all__ = ['generic1d', 'shapiro1d', 'gaussian1d', 'hamming1d','generic2d', 'shapiro2d', 'gaussian2d', 'deriv', 'deriv2d',
     'norm_atan','running_average', 'bartlett1d', 'kaiser1d', 'hanning1d', 'blackman1d']
 __all__.sort()
@@ -45,10 +50,10 @@ cdms = cdms2
 import scipy.signal
 from scipy.signal import convolve2d
 
-from misc import cp_atts
-from phys.units import deg2m
+from .misc import cp_atts
+from .phys.units import deg2m
 from pylab import meshgrid
-from axes import islon,islat
+from .axes import islon,islat
 import warnings
 
 try:
@@ -113,7 +118,7 @@ def generic1d(data, weights, axis=0, mask='same', copy=True, cyclic=False):
     assert weights.shape[-1] % 2 == 1, 'Shape of weights must be of odd size'
     ww = (~N.ma.getmaskarray(data)).astype('i') #  = good 2D
     nw = weights.shape[-1]
-    nw2 = weights.shape[-1] / 2
+    nw2 = old_div(weights.shape[-1], 2)
     weights.shape = 1, -1
     ww.shape = datan.shape
     if data.mask is not MV2.nomask:
@@ -143,7 +148,7 @@ def generic1d(data, weights, axis=0, mask='same', copy=True, cyclic=False):
     del fdatan, fww
     bad = ww==0
     ww[bad] = 1
-    datan[:] = N.where(bad, datan, datan/ww.astype('d'))
+    datan[:] = N.where(bad, datan, old_div(datan,ww.astype('d')))
     ww[bad] = 0
 
     # Set
@@ -164,7 +169,7 @@ def generic1d(data, weights, axis=0, mask='same', copy=True, cyclic=False):
                 mask = 0.
             else:
                 mask = float(mask)
-            bad |= (ww/one2d)<(1-mask) # threshold
+            bad |= (old_div(ww,one2d))<(1-mask) # threshold
         datao[:] = N.ma.masked_where(bad, datan, copy=False)
         del ww, one2d, bad
     else:
@@ -281,7 +286,7 @@ def gaussian1d(data,nxw,**kwargs):
     assert nxw % 2 == 1 , 'nxw must be an odd number'
     tc = data.dtype.char
     xx = N.arange(nxw)-nxw/2.
-    return generic1d(data, N.exp(-xx**2/nxw**2),**kwargs)
+    return generic1d(data, N.exp(old_div(-xx**2,nxw**2)),**kwargs)
 
 
 
@@ -338,7 +343,7 @@ def generic2d(data, weights, mask='same', copy=True):
     datan = data.filled(0.).copy()
     if datan.ndim > 2:
         ny, nx = datan.shape[-2:]
-        datan.shape = datan.size/(nx*ny), ny, nx
+        datan.shape = old_div(datan.size,(nx*ny)), ny, nx
     elif datan.ndim == 2:
         datan.shape = (1,) + datan.shape[-2:]
     ww.shape = datan.shape
@@ -346,7 +351,7 @@ def generic2d(data, weights, mask='same', copy=True):
 
     # Filter
     kwf = dict(mode='same', boundary='fill', fillvalue=0.)
-    for i in xrange(datan.shape[0]): # TODO: multiproc filter2d
+    for i in range(datan.shape[0]): # TODO: multiproc filter2d
         datan[i] = scipy.signal.convolve2d(datan[i], weights, **kwf)
         if data.mask is MV2.nomask:
             ww[i] = scipy.signal.convolve2d(one2d, weights, **kwf)
@@ -357,7 +362,7 @@ def generic2d(data, weights, mask='same', copy=True):
         one3d = N.resize(one3d, datan.shape)
     bad = ww==0
     ww[bad]=1.
-    datan[:] = N.where(bad, datan, datan/ww)
+    datan[:] = N.where(bad, datan, old_div(datan,ww))
     ww[bad]=0
 #    del bad
 
@@ -379,7 +384,7 @@ def generic2d(data, weights, mask='same', copy=True):
                 mask = 0.
             else:
                 mask = float(mask)
-            bad |= (ww/one3d) < (1-mask)
+            bad |= (old_div(ww,one3d)) < (1-mask)
         datao[:] = N.ma.masked_where(bad, datan, copy=False)
         del ww, one3d
     else:
@@ -402,8 +407,8 @@ def generic2d_old(data,weights,fast=False,fill_value=None,min_valid=0):
             'Shape of weights must be of odd size in the two directions'
     weights = weights.astype(data.dtype.char)
     nyw,nxw = weights.shape
-    dxw = nxw/2
-    dyw = nyw/2
+    dxw = old_div(nxw,2)
+    dyw = old_div(nyw,2)
     ny,nx = data.shape
 
     data_filt = data.clone()
@@ -425,11 +430,11 @@ def generic2d_old(data,weights,fast=False,fill_value=None,min_valid=0):
         data_to_use = data
         mm = MV
 
-    for j in xrange(ny):
+    for j in range(ny):
         yyrange = N.clip([j-dyw,j+dyw],0,ny-1)
         jminw = min(yyrange)-j+dyw+1
         jmaxw = max(yyrange)-j+dyw+1
-        for i in xrange(nx):
+        for i in range(nx):
             xxrange = N.clip([i-dxw,i+dxw],0,nx-1)
             this_data = data_to_use[yyrange[0]:yyrange[1],xxrange[0]:xxrange[1]]
             if min_valid and MV.count(this_data) < min_valid:
@@ -507,14 +512,14 @@ def gaussian2d(data, nxw, nyw=None, sxw=1/3., syw=1/3., rmax=3., **kwargs):
     assert nxw % 2 == 1 and nyw % 2 == 1, 'nxw and nyw must be odd numbers'
     assert sxw > 0 and syw > 0,  'sxw and syw must be positive'
 
-    xx,yy = meshgrid(N.arange(nxw)-nxw/2, N.arange(nyw)-nyw/2)
+    xx,yy = meshgrid(N.arange(nxw)-old_div(nxw,2), N.arange(nyw)-old_div(nyw,2))
 
     if sxw < 1:
-        sxw *= nxw/2
+        sxw *= old_div(nxw,2)
     if syw < 1:
-        syw *= nyw/2
+        syw *= old_div(nyw,2)
 
-    weights = N.exp(-(xx**2/sxw**2 + yy**2/syw**2))
+    weights = N.exp(-(old_div(xx**2,sxw**2) + old_div(yy**2,syw**2)))
 
     weights[weights<N.exp(-rmax**2)] = 0.
 
@@ -659,7 +664,7 @@ def norm_atan(var,stretch=1.):
         var_norm = N.array(var)
         mm = N
     std = var.std()
-    var_norm[:] = mm.arctan(stretch*var/var.std())*2./N.pi
+    var_norm[:] = old_div(mm.arctan(old_div(stretch*var,var.std()))*2.,N.pi)
     return var_norm
 
 
@@ -713,9 +718,9 @@ def running_average(x, l, d = 0, w = None, keep_mask = True):
             io.append(':')
 
     for i in range(n):
-        imin = max(0,  i-l/2)
-        imax = min(n-1,i+l/2)+1
-        exec 'out['+','.join(ii)+'] = AV.average(x['+','.join(io)+'], d)'
+        imin = max(0,  i-old_div(l,2))
+        imax = min(n-1,i+old_div(l,2))+1
+        exec('out['+','.join(ii)+'] = AV.average(x['+','.join(io)+'], d)')
 
     if keep_mask:
         out = MV.masked_array(out,mask=MV.getmask(x))

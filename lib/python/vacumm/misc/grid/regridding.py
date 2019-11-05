@@ -5,6 +5,9 @@
 
     Tutorials: :ref:`user.tut.misc.grid.regridding`
 """
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 # Copyright or © or Copr. Actimar/IFREMER (2010-2018)
 #
 # This software is a computer program whose purpose is to provide
@@ -37,6 +40,12 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
 #
+from builtins import str
+from builtins import zip
+from builtins import range
+from past.builtins import basestring
+from builtins import object
+from past.utils import old_div
 import gc, os, subprocess
 import re
 import warnings
@@ -95,17 +104,17 @@ _interp_funcs = ['%s as _%s_'%(ff, ff) for ff in _interp_funcs]
 _interp_funcs = ', '.join(_interp_funcs)
 import_interp = "from _interp_ import %s" % (_interp_funcs, )
 try:
-    exec  import_interp
-except Exception, e:
-    print e
-    print 'Trying to build it...'
+    exec(import_interp)
+except Exception as e:
+    print(e)
+    print('Trying to build it...')
     import subprocess
     cmd = ["make"] # Compilation of all vacumm extensions from the root of sources
     out = subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.PIPE,
         stderr=subprocess.PIPE).communicate()
     if out[1]!='':
         raise ImportError("Can't build _interp_ for importation:\n%s"%('\n'.join(out)))
-    exec import_interp
+    exec(import_interp)
 
 
 # Interpolation methods
@@ -271,14 +280,14 @@ def regrid1dold(vari, axo, method='auto', axis=None, xmap=None, xmapper=None, ma
             xmap = [xmap]
         else:
             xmap = list(xmap)
-        for ix in xrange(len(xmap)):
+        for ix in range(len(xmap)):
             if xmap[ix] == -1:
                 xmap[ix] = vari.ndim-1
             else:
                 assert xmap[ix] >= 0 and xmap[ix] < vari.ndim, 'Wrong xmap axis'
 
         # Roll axes
-        oldmap = range(varin.ndim)
+        oldmap = list(range(varin.ndim))
         newmap = xmap+[axis]
         for iax in oldmap[::-1]:
             if iax not in newmap:
@@ -316,7 +325,7 @@ def regrid1dold(vari, axo, method='auto', axis=None, xmap=None, xmapper=None, ma
 
     # Reshape var to get a 2D array
     if varis.ndim != 2:
-        vari2d = varis.reshape(varis.size/nyi, nyi, order='F')
+        vari2d = varis.reshape(old_div(varis.size,nyi), nyi, order='F')
     else:
         vari2d = varis
 
@@ -403,7 +412,7 @@ def _subshape_(bigshape, subshape, axis=None):
     ns = len(subshape)
     assert nb>=ns # TODO: make it more generic
     istart = None
-    for i in xrange(nb-ns+1):
+    for i in range(nb-ns+1):
         subbigshape = bigshape[i:i+ns]
         if axis is not None and axis>=i and axis<i+ns:
             i0 = axis-i
@@ -455,11 +464,11 @@ def _syncshapes_(axi, iaxi, axo, iaxo):
 
     # Right adjusment
     if nir>nor: # expand the second to the right
-        for ir in xrange(nir-nor):
+        for ir in range(nir-nor):
             axo = axo.reshape(axo.shape+(1,))
             axo = N.repeat(axo, axi.shape[iaxi+nor+ir+1], axis=-1)
     elif nor>nir: # expand the first to the right
-        for ir in xrange(nor-nir):
+        for ir in range(nor-nir):
             axi = axi.reshape(axi.shape+(1,))
             axi = N.repeat(axi, axo.shape[iaxo+nir+ir+1], axis=-1)
 
@@ -488,7 +497,7 @@ def _toright_(ar, iax):
             newar.shape[-1] == ar.shape[iax]
             ar == newarr.translate(*bakmap)
     """
-    oldmap = range(ar.ndim)
+    oldmap = list(range(ar.ndim))
     newmap = list(oldmap)
     newmap.remove(iax)
     newmap.append(iax)
@@ -672,7 +681,7 @@ def regrid1d(vari, axo, method='auto', axis=None, axi=None, iaxo=None, iaxi=None
     axond, bakmapo = _toright_(axon, iaxo)
     if axond.ndim>2:
         axond = axond.reshape((-1, axon.shape[iaxo]))
-    nxb = vari2d.size/max(axind.size, axond.size)
+    nxb = old_div(vari2d.size,max(axind.size, axond.size))
     nxi = axind.ndim
     nxo = axond.ndim
 
@@ -980,7 +989,7 @@ def fill1d(vari, axis=0, method='linear', maxgap=0):
     if vari.mask is MV2.nomask: return vari.clone()
     iaxis = vari.getAxis(axis)
     nx = len(iaxis)
-    ny = vari.size/nx
+    ny = old_div(vari.size,nx)
 
     if vari.getMissing() is None:
         vari.setMissing(1.e20)
@@ -1019,7 +1028,7 @@ def fill1d(vari, axis=0, method='linear', maxgap=0):
         dd = N.ones(nx-1)
     keep = N.ones(nx, '?')
     vari2dm = N.ma.ones(nx)
-    for iy in xrange(ny):
+    for iy in range(ny):
 
         # Mask
         # - base mask
@@ -1108,7 +1117,7 @@ def fill2d(var, xx=None, yy=None, mask=None, copy=True, **kwargs):
 
     # Var
     assert xx.shape == var.shape[-2:], '2D axes and variable are not compatible in shape (%s against %s)' %(xx.shape, var.shape)
-    nex = var.size/(var.shape[-1]*var.shape[-2])
+    nex = old_div(var.size,(var.shape[-1]*var.shape[-2]))
     if var.ndim != 3:
         var3d = var.reshape(nex, var.shape[-2],  var.shape[-1])
     else:
@@ -1124,7 +1133,7 @@ def fill2d(var, xx=None, yy=None, mask=None, copy=True, **kwargs):
             mask.shape = var3d.shape
 
     # Loop on extra dimensions
-    for iex in xrange(nex):
+    for iex in range(nex):
 
         var2d = var3d[iex].asma()
         if mask is not MV.nomask:
@@ -1176,7 +1185,7 @@ def regular(vi,dx=None,verbose=True,auto_bounds=False):
     ddx = (xid[1:]-xid[:-1])
     if dx is None:
         dx = N.minimum.reduce(ddx)
-    gaps = ddx / dx - 1.
+    gaps = old_div(ddx, dx) - 1.
     gaps = N.where(N.less((gaps+1.) % 1.,0.1),N.floor(gaps),gaps)
     gaps = N.where(N.greater((gaps+1.) % 1.,0.9),N.ceil(gaps),gaps).astype('l')
     ngaps = N.sum(gaps)
@@ -1189,7 +1198,7 @@ def regular(vi,dx=None,verbose=True,auto_bounds=False):
     if not ngaps:
         return vi
     if verbose:
-        print 'Filled %i gaps with missing values' % ngaps
+        print('Filled %i gaps with missing values' % ngaps)
 
     # Init output var
     nxi = len(xi)
@@ -1331,14 +1340,14 @@ class GridData(object):
 
         # Prepare sub-blocks
         if not self.sub:
-            jbs = xrange(1)
-            ibs = xrange(1)
+            jbs = range(1)
+            ibs = range(1)
         else:
-            jbs = xrange((self._GDH.ny-1)/self.sub+1)
-            ibs = xrange((self._GDH.nx-1)/self.sub+1)
+            jbs = range(old_div((self._GDH.ny-1),self.sub)+1)
+            ibs = range(old_div((self._GDH.nx-1),self.sub)+1)
 
         # Loop on supplementary dims
-        for iex in xrange(nex):
+        for iex in range(nex):
 
             # Get data and mask
             get = self._GDH.get(zi2d, iex)
@@ -1388,7 +1397,7 @@ class GridData(object):
 
                     # Interpolator
                     interpolator = self.r(xi[goodi], yi[goodi], xo, yo, listOutput = 'yes')
-                    for att, val in self.ratts.items():
+                    for att, val in list(self.ratts.items()):
                         setattr(interpolator, att, val)
                     interpolator.nul = missing_value
 
@@ -1443,7 +1452,7 @@ def cargen(xi, yi, zi, ggo, mask=None, compress=False, missing_value=None, **kwa
     zo3d, mo3d = GDH.init_data(zi, missing_value)
 
     # Loop on supplementary dims
-    for iex in xrange(GDH.nex):
+    for iex in range(GDH.nex):
 
         # Get data and mask
         get = GDH.get(iex)
@@ -1632,7 +1641,7 @@ class _GridDataHelper_(object):
         # Convert to right dims
         self.inited = True
         self.zi = zi
-        nex = zi.size/zi.shape[-1]
+        nex = old_div(zi.size,zi.shape[-1])
         if cdms2.isVariable(zi):
             zi = zi.asma()
         self.zi2d = zi.reshape(nex, zi.shape[-1]).astype('d').copy()
@@ -2133,7 +2142,7 @@ def grid2xy(vari, xo, yo, zo=None, to=None, zi=None, method='linear', outaxis=No
 #            del mi, mo, vonear
 
     elif method != 'nearest':
-        raise NotImplementedError, 'Method yet not implemented: '+method
+        raise NotImplementedError('Method yet not implemented: '+method)
 
     # Output
     vo.shape = tuple([len(ax) for ax in extra_axes]) + (vo.shape[-1], )
@@ -2310,7 +2319,7 @@ def refine(vari, factor, geo=True, smoothcoast=False, noaxes=False):
     step = 1./factor
     if vari[:].ndim == 1: # 1D linear
         varo[0::factor] = vari[:]
-        for i in xrange(1, factor):
+        for i in range(1, factor):
             varo[i::factor] = vari[:-1]+(vari[1:]-vari[:-1])*i*step
 
     else: # 2D bilinear
@@ -2494,7 +2503,7 @@ def regrid2dold(vari, ggo, method='auto', mask_thres=.5, ext=False,
 
     ggi = curv2rect(get_grid(vari), mode='none')
     nyi, nxi = ggi.shape
-    nzi = vari.size/(nxi*nyi)
+    nzi = old_div(vari.size,(nxi*nyi))
     ggo = get_grid(ggo)
     ggor = curv2rect(ggo, mode='none')
     nyo, nxo = ggo.shape
@@ -2526,7 +2535,7 @@ def regrid2dold(vari, ggo, method='auto', mask_thres=.5, ext=False,
     # Some checks about methods
     if curved:
         if method not in _griddata_methods+['nearest', 'bining']+_cdat_methods:
-            raise NotImplementedError, 'Method not allowed with curvilinear grids: '+method
+            raise NotImplementedError('Method not allowed with curvilinear grids: '+method)
         xxi, yyi = meshgrid(loni, lati)
     maskoext = False
     if method == 'krig': method = 'carg'
@@ -2537,10 +2546,10 @@ def regrid2dold(vari, ggo, method='auto', mask_thres=.5, ext=False,
         if not isgrid(ggi, curv=True) or method=='nearest':
             xxi, yyi = meshgrid(loni, lati)
         if not ext:
-            from masking import grid_envelop_mask
+            from .masking import grid_envelop_mask
             maskoext = N.resize(grid_envelop_mask(ggi, ggo, poly=ext_masking=="poly"), (nzi, nyo, nxo))
     elif method == 'bining' and curvedo:
-            raise NotImplementedError, 'Method not allowed with curvilinear output grid: '+method
+            raise NotImplementedError('Method not allowed with curvilinear output grid: '+method)
 
     # 3D variable?
     if vari.ndim != 3:
@@ -2658,7 +2667,7 @@ def regrid2dold(vari, ggo, method='auto', mask_thres=.5, ext=False,
 #           del varo3d_nearest
 
     else:
-        raise RuntimeError, "Well, what's this funckin' method you bastard huh: %s?"%method
+        raise RuntimeError("Well, what's this funckin' method you bastard huh: %s?"%method)
 
 
     # Back to rights dims
@@ -2759,7 +2768,7 @@ def regrid2d(vari, ggo, method='auto', tool=None, rgdr=None, getrgdr=False,
     mv = vari.getMissing()
     ggi = curv2rect(get_grid(vari), mode='none')
     nyi, nxi = ggi.shape
-    nzi = vari.size/(nxi*nyi)
+    nzi = old_div(vari.size,(nxi*nyi))
     ggo = get_grid(ggo)
     ggor = curv2rect(ggo, mode='none')
     nyo, nxo = ggo.shape
@@ -2880,7 +2889,7 @@ def regrid2d(vari, ggo, method='auto', tool=None, rgdr=None, getrgdr=False,
         varo3d = wrapper(vari3d, xi, yi, xo, yo, mv, geo, ext)
 
     else:
-        raise RuntimeError, "Well, what's this funckin' method you bastard huh: %s?"%method
+        raise RuntimeError("Well, what's this funckin' method you bastard huh: %s?"%method)
 
 
     # Back to rights dims
@@ -2909,7 +2918,7 @@ regrid2dnew = regrid2d
 
 def _regrid2d_nearest2d_(vari3d, xxi, yyi, xxo, yyo, mv, geo, maskoext):
     """Wrapper to fortran _nearest2d_"""
-    nb = min(xxi.shape)/50
+    nb = old_div(min(xxi.shape),50)
     if nb == 1: nb = 0
 #    nb = -1
     if N.ma.isMA(vari3d): vari3d = vari3d.filled(mv)
@@ -3031,14 +3040,14 @@ def _regrid2d_natgridlist_(vari3d, xi, yi, xxo, yyo, ext, **kwargs):
     dxo = xo.ptp()/10.
     dyo = xo.ptp()/10.
     #TODO: add dxo,dxy natgridlist in regrid2d
-    border = zip(xxo[0], yyo[0])+zip(xxo[1:-1, -1], yyo[1:-1, -1])+\
-        zip(xxo[-1], yyo[-1])+zip(xxo[1:-1, 0], yyo[1:-1, 0])
+    border = list(zip(xxo[0], yyo[0]))+list(zip(xxo[1:-1, -1], yyo[1:-1, -1]))+\
+        list(zip(xxo[-1], yyo[-1]))+list(zip(xxo[1:-1, 0], yyo[1:-1, 0]))
     poly = Polygon(N.array(border))
     good = N.ones(xo.shape, '?')
     if hasattr(vari3d, 'mask') and vari3d.mask is not MV2.nomask and ~vari3d.mask.all():
         good &= ~vari2d.mask
-    for i in xrange(nxi):
-        for j in xrange(nyi):
+    for i in range(nxi):
+        for j in range(nyi):
             good[i, j] = Point((xxi[j, i], yyi[j, i])).within(poly)
     varitmp = vari2d.compress(good, axis=-1)
     xxitmp = xxi.compress(good).astype('d')
@@ -3049,7 +3058,7 @@ def _regrid2d_natgridlist_(vari3d, xi, yi, xxo, yyo, ext, **kwargs):
     r.nul = -10.
     r.dup = 0
     varo2d = N.zeros((nzi, nyo, nxo), dtype=vari.dtype)
-    for iz in xrange(nzi):
+    for iz in range(nzi):
         varo2d[iz] = r.rgrd(varitmp[iz])
     del xxitmp, yyitmp, varitmp
     varo3d = varo2d.reshape(vari3d.shape[:-2]+(nyo, nxo))
@@ -3148,7 +3157,7 @@ class GriddedMerger(object):
         self.id = id
         self._var = None
         self.set_grid(grid)
-        for att, val in kwargs.items():
+        for att, val in list(kwargs.items()):
             setattr(self, '_'+att, val)
 
     def set_grid(self, grid):
@@ -3219,7 +3228,7 @@ class GriddedMerger(object):
         if not len(self): return 'No variables in the merger'
         ret = ''
         for i, var in enumerate(self._vars):
-            print '\n%i) %s_n'%(i, var.id)
+            print('\n%i) %s_n'%(i, var.id))
             for att in 'long_name', 'units', '_gm_method':
                 if hasattr(var, att):
                     res += '  %s = %s'%(att, getattr(var, att))
@@ -3302,25 +3311,25 @@ class GriddedMerger(object):
             cover[cslice[0], cslice[1]] = 1.
             # - partial cells
             if ix0>=0:
-                cover[:, ix0] *= (xbo[ix0+1]-xmini)/(xbo[ix0+1]-xbo[ix0])
+                cover[:, ix0] *= old_div((xbo[ix0+1]-xmini),(xbo[ix0+1]-xbo[ix0]))
             if ix1<nxo:
-                cover[:, ix1] *= (xmaxi-xbo[ix1])/(xbo[ix1+1]-xbo[ix1])
+                cover[:, ix1] *= old_div((xmaxi-xbo[ix1]),(xbo[ix1+1]-xbo[ix1]))
             if iy0>=0:
-                cover[iy0, :] *= (ybo[iy0+1]-ymini)/(ybo[iy0+1]-ybo[iy0])
+                cover[iy0, :] *= old_div((ybo[iy0+1]-ymini),(ybo[iy0+1]-ybo[iy0]))
             if iy1<nyo:
-                cover[iy1, :] *= (ymaxi-ybo[iy1])/(ybo[iy1+1]-ybo[iy1])
+                cover[iy1, :] *= old_div((ymaxi-ybo[iy1]),(ybo[iy1+1]-ybo[iy1]))
             # - borders
             xpad = N.ones(nyo)
             ypad = N.ones(nxo)
             ipadmax = min(ix1, nxo-1)-max(ix0, 0)
-            for ipad in xrange(min(pad, ipadmax+1)):
-                xcov = (ipad+.5)*xpad/(ipadmax+.5)
+            for ipad in range(min(pad, ipadmax+1)):
+                xcov = old_div((ipad+.5)*xpad,(ipadmax+.5))
                 cover[:, ipad] *= xcov
                 cover[:, nxo-ipad-1] *= xcov
                 del xcov
             jpadmax = min(iy1, nyo-1)-max(iy0, 0)
-            for jpad in xrange(min(pad, jpadmax+1)):
-                ycov = (jpad+.5)*ypad/(jpadmax+.5)
+            for jpad in range(min(pad, jpadmax+1)):
+                ycov = old_div((jpad+.5)*ypad,(jpadmax+.5))
                 cover[jpad] *= ycov
                 cover[nyo-jpad-1] *= ycov
                 del ycov
@@ -3335,7 +3344,7 @@ class GriddedMerger(object):
             wnd[:] = N.resize(cover, varo.shape)
             vo[:] *= wnd
             varo[..., cslice[0], cslice[1]] += vo[cslice[0], cslice[1]]
-        varo[:] = MV2.masked_where(total_cover==0, varo/total_cover)
+        varo[:] = MV2.masked_where(total_cover==0, old_div(varo,total_cover))
         del self._var, cover, total_cover, vo, wnd
         self._var = varo
         return varo
@@ -3485,7 +3494,7 @@ def shift2d(vari, ishift=0, jshift=0, bmode=None, copy=True, **kwargs):
         var = vari
     if ishift==0 and jshift==0: return var
     ny, nx = var.shape[-2:]
-    ne = N.multiply.reduce(var.shape)/(nx*ny)
+    ne = old_div(N.multiply.reduce(var.shape),(nx*ny))
     sg = not A.isaxis(var) and cdms2.isVariable(var) and var.getGrid() is not None
     if sg:
         grido = shiftgrid(var.getGrid(), ishift=ishift, jshift=jshift)
@@ -3654,7 +3663,7 @@ def extend1d(var, ext=0, mode=None, axis=-1, copy=False, num=False):
             if mode=='extrap':
                 dv = varm[ss['first']]-varm[ss['firstp1']]
             ss['extleft'] = list(ss['extleft'])
-            for i in xrange(1, ext[0]+1):
+            for i in range(1, ext[0]+1):
                 ss['extleft'][axis] = ext[0]-i
                 varf[tuple(ss['extleft'])] = varm[ss['first']]
                 if mode=='extrap':
@@ -3670,7 +3679,7 @@ def extend1d(var, ext=0, mode=None, axis=-1, copy=False, num=False):
             if mode=='extrap':
                 dv = varm[ss['last']]-varm[ss['lastm1']]
             ss['extright'] = list(ss['extright'])
-            for i in xrange(1, ext[1]+1):
+            for i in range(1, ext[1]+1):
                 ss['extright'][axis] = ext[0]+ni+i-1
                 varf[tuple(ss['extright'])] = varm[ss['last']]
                 if mode=='extrap':
@@ -3696,7 +3705,7 @@ def extend1d(var, ext=0, mode=None, axis=-1, copy=False, num=False):
             varo = MV2.asarray(varf)
             cp_atts(var, varo)
             gridi = var.getGrid()
-            for iaxis in xrange(varo.ndim):
+            for iaxis in range(varo.ndim):
                 axi = var.getAxis(iaxis)
                 if axis!=iaxis:
                     varo.setAxis(iaxis, axi)
@@ -3844,14 +3853,14 @@ class CDATRegridder(object):
         # - method
         userSpecifiesMethod = False
         for rm in 'rm', 'method', 'regridmethod', 'regrid_method', 'regridMethod':
-            if keywords.has_key(rm):
+            if rm in keywords:
                 if keywords[rm] is not None:
                     regridMethod = keywords[rm]
                     userSpecifiesMethod = True
                 del keywords[rm]
         # - tool
         for rt in 'rt', 'tool', 'regridtool', 'regrid_tool', 'regridTool':
-            if keywords.has_key(rt):
+            if rt in keywords:
                 if keywords[rt] is not None:
                     regridTool = keywords[rt]
                 del keywords[rt]
@@ -4119,7 +4128,7 @@ class CurvedInterpolator(object):
 
 def _monotonise_(vari, axes, targets=None, back=False, subdims=None):
     if targets is None:
-        targets = range(-len(axes), 0)
+        targets = list(range(-len(axes), 0))
     if not isinstance(targets, list):
         targets = [targets]
     if not targets:

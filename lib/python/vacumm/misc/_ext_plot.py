@@ -3,7 +3,11 @@
 
     - http://matplotlib.sourceforge.net/examples/pylab_examples/demo_agg_filter.html
 """
+from __future__ import division
+from __future__ import print_function
 
+from builtins import object
+from past.utils import old_div
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -17,7 +21,7 @@ def smooth1d(x, window_len):
 
     s=np.r_[2*x[0]-x[window_len:1:-1],x,2*x[-1]-x[-1:-window_len:-1]]
     w = np.hanning(window_len)
-    y=np.convolve(w/w.sum(),s,mode='same')
+    y=np.convolve(old_div(w,w.sum()),s,mode='same')
 #    # FIXME: smooth1d with size equal to window_len (9)
 #    if x.shape!=y[window_len-1:-window_len+1].shape:
 #        print 'x.shape, window_len,  y.shape, y[window_len-1:-window_len+1].shape', x.shape, window_len,  y.shape, y[window_len-1:-window_len+1].shape
@@ -157,7 +161,7 @@ class LightFilter(BaseFilter):
 
         rgb2 = self.light_source.shade_rgb(rgb, elevation,
                                            fraction=self.fraction)
-        print 'process'
+        print('process')
         tgt = np.empty_like(padded_src)
         tgt[:,:,:3] = rgb2
         tgt[:,:,3] = padded_src[:,:,3]

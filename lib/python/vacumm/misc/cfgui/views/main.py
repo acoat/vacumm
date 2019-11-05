@@ -34,6 +34,9 @@
 # knowledge of the CeCILL license and that you accept its terms.
 #
 
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import collections, os, pprint, re, sys
 
 from PyQt4 import QtCore, QtGui
@@ -136,7 +139,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
         path = QtGui.QFileDialog.getOpenFileName(filter=Session.configuration_file_filter)
         if not path:
             return
-        self.controller.load_configuration(unicode(path))
+        self.controller.load_configuration(str(path))
 
 
     def on_menu_file_save(self):
@@ -145,14 +148,14 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
             path = QtGui.QFileDialog.getSaveFileName(filter=Session.configuration_file_filter)
             if not path:
                 return
-        self.controller.save_configuration(unicode(path))
+        self.controller.save_configuration(str(path))
 
 
     def on_menu_file_save_as(self):
         path = QtGui.QFileDialog.getSaveFileName(filter=Session.configuration_file_filter)
         if not path:
             return
-        self.controller.save_configuration(unicode(path))
+        self.controller.save_configuration(str(path))
 
 
     def on_menu_file_preferences(self):
@@ -179,11 +182,11 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
 
 
     def on_menu_help_user_guide(self):
-        print 'on_menu_help_user_guide'
+        print('on_menu_help_user_guide')
 
 
     def on_menu_help_about(self):
-        print 'on_menu_help_about'
+        print('on_menu_help_about')
 
 
     def on_menu_edit_collapse_all(self):
@@ -285,12 +288,12 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
             bound_dict_line_to_name[line] = section_name
             def editingFinished():
 
-                new_name = unicode(line.text())
+                new_name = str(line.text())
                 previous_name = bound_dict_line_to_name[line]
 
                 # XXX
-                current_names = config_widget.parent.keys()
-                unique_name = self.generate_unique_name(new_name, config_widget.parent.keys(), previous_name)
+                current_names = list(config_widget.parent.keys())
+                unique_name = self.generate_unique_name(new_name, list(config_widget.parent.keys()), previous_name)
                 # XXX
 
                 self.debug('before rename section: previous name %r, new name %r, current names %r', previous_name, new_name, current_names)
@@ -307,7 +310,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
                 config_widget.parent[unique_name] = config_widget.parent.pop(previous_name)
 
                 bound_dict_line_to_name[line] = unique_name
-                self.debug('after rename section: config_widget %s bound_dict_line_to_name %s', config_widget.keys(), bound_dict_line_to_name.values())
+                self.debug('after rename section: config_widget %s bound_dict_line_to_name %s', list(config_widget.keys()), list(bound_dict_line_to_name.values()))
 
             line.editingFinished.connect(editingFinished)
 
@@ -334,13 +337,13 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
             layout.addWidget(removeButton)
 
             def removeClicked():
-                self.debug('before remove section: config_widget %s bound_dict_line_to_name %s', config_widget.parent.keys(), bound_dict_line_to_name.values())
+                self.debug('before remove section: config_widget %s bound_dict_line_to_name %s', list(config_widget.parent.keys()), list(bound_dict_line_to_name.values()))
                 item_key.parent().removeRow(item_key.row())
-                name = unicode(line.text())
+                name = str(line.text())
                 bound_dict_line_to_name.pop(line)
                 config_widget.parent.pop(name)
                 self.verbose('remove many section %s', name)
-                self.debug('after remove section: config_widget %s bound_dict_line_to_name %s', config_widget.parent.keys(), bound_dict_line_to_name.values())
+                self.debug('after remove section: config_widget %s bound_dict_line_to_name %s', list(config_widget.parent.keys()), list(bound_dict_line_to_name.values()))
             removeButton.clicked.connect(removeClicked)
 
         self.treeview_config.setIndexWidget(item_key.index(), frame)
@@ -401,7 +404,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
 
         def on_add_section():
 
-            manysection_name = self.generate_unique_name(unicode('new_section'), config_widget.keys())
+            manysection_name = self.generate_unique_name(str('new_section'), list(config_widget.keys()))
             self.debug('add many section %s', manysection_name)
 
             config_widget[manysection_name] = ConfigWidgetDict()
@@ -419,7 +422,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
         help = ''
         try:
             help = _shelp_(optspec, option_name, format='%(shelp)s\nDefault: %(default)r', undoc='')
-        except Exception, e:
+        except Exception as e:
             self.debug('Failed to get help for option %r: %s %s', option_name, e.__class__.__name__, e)
 
         item_key = QtGui.QStandardItem()
@@ -466,10 +469,10 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
 
             bound_dict_line_to_name[line] = option_name
             def editingFinished():
-                new_name = unicode(line.text())
+                new_name = str(line.text())
                 previous_name = bound_dict_line_to_name[line]
 
-                current_names = config_widget.keys()
+                current_names = list(config_widget.keys())
                 unique_name = self.generate_unique_name(new_name, current_names, previous_name)
 
                 self.debug('before rename option: previous name %r, new name %r, current names %r', previous_name, new_name, current_names)
@@ -486,7 +489,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
                 config_widget[unique_name] = config_widget.pop(previous_name)
 
                 bound_dict_line_to_name[line] = unique_name
-                self.debug('after rename option: current names %s bound_dict_line_to_name %s', config_widget.keys(), bound_dict_line_to_name.values())
+                self.debug('after rename option: current names %s bound_dict_line_to_name %s', list(config_widget.keys()), list(bound_dict_line_to_name.values()))
             line.editingFinished.connect(editingFinished)
 
             def resizeLine():
@@ -511,13 +514,13 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
             removeButton.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum))
 
             def removeClicked():
-                self.debug('before rename option: config_widget %s bound_dict_line_to_name %s', config_widget.keys(), bound_dict_line_to_name.values())
+                self.debug('before rename option: config_widget %s bound_dict_line_to_name %s', list(config_widget.keys()), list(bound_dict_line_to_name.values()))
                 item_key.parent().removeRow(item_key.row())
-                name = unicode(line.text())
+                name = str(line.text())
                 config_widget.pop(name)
                 bound_dict_line_to_name.pop(line)
                 self.verbose('remove many option %s', name)
-                self.debug('after rename option: config_widget %s bound_dict_line_to_name %s', config_widget.keys(), bound_dict_line_to_name.values())
+                self.debug('after rename option: config_widget %s bound_dict_line_to_name %s', list(config_widget.keys()), list(bound_dict_line_to_name.values()))
             removeButton.clicked.connect(removeClicked)
 
             layout.addWidget(removeButton)
@@ -544,7 +547,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
         help = ''
         try:
             help = _shelp_(optspec, option_name, format='%(shelp)s\nDefault: %(default)r', undoc='')
-        except Exception, e:
+        except Exception as e:
             self.debug('Failed to get help for option %r: %s %s', option_name, e.__class__.__name__, e)
 
         item_key = QtGui.QStandardItem()
@@ -569,7 +572,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
 
         def on_add_option():
 
-            manyoption_name = self.generate_unique_name(unicode('new_option'), config_widget.keys())
+            manyoption_name = self.generate_unique_name(str('new_option'), list(config_widget.keys()))
             self.debug('add many option %s', manyoption_name)
 
             self.add_option(item_parent, manyoption_name, optspec, config_widget, can_rename=True, can_remove=True)
@@ -592,7 +595,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
 
             # Remove any many option/section
             self.logger.debug('clean many options/sections')
-            for name, dict_or_widget in config_widget.items():
+            for name, dict_or_widget in list(config_widget.items()):
                 if name not in cfgspec.scalars and name not in cfgspec.sections:
                     self.logger.debug('remove many %s %r', 'section' if isinstance(dict_or_widget, dict) else 'option', name)
                     dict_or_widget.item_key.parent().removeRow(dict_or_widget.item_key.row())
@@ -733,7 +736,7 @@ class MainWindow(QtObject, Ui_MainWindow, QtGui.QMainWindow):
             section_name = cfgspec.name
             self.verbose('section %s', pathname(cfgspec))
 
-            for name, dict_or_widget in config_widget.items():
+            for name, dict_or_widget in list(config_widget.items()):
 
                 if not isinstance(dict_or_widget, dict):
 

@@ -37,10 +37,14 @@
 #        S. Theetten (Ifremer)
 # VER : 1.0 (12/10/2010)
 #**********************************************************************************
-import os, sys, ConfigParser
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
+import os, sys, configparser
 from vacumm.data.in_situ.profile import Profile
 
-class Recopesca():
+class Recopesca(object):
 
     qc_ok = "0111111"
 
@@ -60,7 +64,7 @@ class Recopesca():
         self.SCRIPT_DIR = SCRIPT_DIR
 
         # Lecture de la periode de validation
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.read(os.path.join(SCRIPT_DIR, 'config.cfg'))
         andeb = config.getint('Time Period', 'andeb')
         anfin = config.getint('Time Period', 'anfin')
@@ -95,14 +99,14 @@ class Recopesca():
 
         os.chdir(self.WORKDIR)  # on se place dans le repertoire de travail
         #----------------------------------------------------
-        print '---------- RECUPERATION FICHIERS RECOPESCA ----------'
-        print 65 * '-'
+        print('---------- RECUPERATION FICHIERS RECOPESCA ----------')
+        print(65 * '-')
         #----------------------------------------------------
 
 
         #-------------------------------------------------------------
         #------- recuperation des donnees : generalites (site ftp, etc)
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.read(os.path.join(self.SCRIPT_DIR, 'config.cfg'))
         URL_CDOCO = config.get('RECOPESCA', 'url_cdoco')
         DATA_DIR = config.get('RECOPESCA', 'data_dir')
@@ -194,7 +198,7 @@ class Recopesca():
 
             # On incremente le temps "test" de 1 mois
             filename = '*%(#)s%(##)s*%(###)s' % {'#':ctest.year, '##':MM, '###':ext}
-            print glob.glob(filename)
+            print(glob.glob(filename))
 
             #creaton map temporaire
             map_profiles_tmp = {}

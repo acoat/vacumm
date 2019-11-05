@@ -164,7 +164,7 @@ class MainController(Object):
         self.notice('Saving configuration to %r', filepath)
         try:
             rollover(filepath, self.application.preferences_controller.preferences.backup_count)
-        except Exception, e:
+        except Exception as e:
             self.exception('Rollover of file %r failed: %s', filepath, e)
         with file(filepath, 'w') as f:
             config.write(f)

@@ -2,6 +2,9 @@
 """
 Time utilities
 """
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 # Copyright or © or Copr. Actimar/IFREMER (2010-2015)
 #
 # This software is a computer program whose purpose is to provide
@@ -34,12 +37,18 @@ Time utilities
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
 #
+from builtins import str
+from builtins import zip
+from builtins import range
+from past.builtins import basestring
+from builtins import object
+from past.utils import old_div
 import os
 import re
 import time, datetime as DT
 from operator import isNumberType, gt, ge, lt, le
 from re import split as resplit,match, compile as recompile
-import math
+from . import math
 
 import numpy as N, MV2, numpy.ma as MA, cdtime, cdms2 as cdms, cdutil, cdms2
 from cdms2.axis import CdtimeTypes,AbstractAxis,ComptimeType,ReltimeType,FileAxis
@@ -157,7 +166,7 @@ def pat2glob(pattern, esc=False):
         'Y':    '[0-2][0-9][0-9][0-9]',
     }
     pc = '%%' if esc else '%'
-    for d, g in pats.items():
+    for d, g in list(pats.items()):
         pattern = pattern.replace(pc+d, g)
     return pattern
 
@@ -481,7 +490,7 @@ def time_type(mytime, out='string', check=False):
             if out=='type': return type(mytime)
             return eval(stype)
     if check:
-        raise TypeError, 'Time of wrong type: %s'%mytime
+        raise TypeError('Time of wrong type: %s'%mytime)
 
 
 def _nummode_(nummode):
@@ -1090,14 +1099,14 @@ class Gaps(cdms.tvariable.TransientVariable):
 
         # Check that we have a valid time axis
         if not cdms.isVariable(var):
-            raise TypeError,'Your variable is not a cdms variable'
+            raise TypeError('Your variable is not a cdms variable')
         mytime = var.getTime()
         if mytime is None:
-            raise TypeError,'Your variable has no time axis'
+            raise TypeError('Your variable has no time axis')
         try:
             time_units =  mytime.units
         except:
-            raise RuntimeError, 'Your time axis needs units'
+            raise RuntimeError('Your time axis needs units')
         kwdt = kwfilter(kwargs, 'dt')
 
         if dt is None: dt = get_dt(mytime, **kwdt)
@@ -1118,7 +1127,7 @@ class Gaps(cdms.tvariable.TransientVariable):
 
         # Derivatives
         dtf = N.diff(dt)
-        dtr =  dtf/ dt # Relative time steps
+        dtr =  old_div(dtf, dt) # Relative time steps
         dtr = N.where((dtr % 1.)<tolerance,N.floor(dtr),dtr)
         dtr = N.where((dtr % 1.)>1.-tolerance,N.ceil(dtr),dtr)
         gg = MA.masked_less(dtr,1.+0.5*tolerance)-1.
@@ -1160,7 +1169,7 @@ class Gaps(cdms.tvariable.TransientVariable):
         self.setAxis(0,gapstime)
 
         if verbose:
-            print 'Found %i gaps' % self.ngap
+            print('Found %i gaps' % self.ngap)
             self.show(headsep=None)
 
         del gaps,tt
@@ -1173,11 +1182,11 @@ class Gaps(cdms.tvariable.TransientVariable):
         Parameters are passed to col_printer()
         """
         if not self.ngap:
-            print 'No gaps to print'
+            print('No gaps to print')
             return
         from .io import col_printer
         cp = col_printer([['LENGTH',7,'%i'],['START',22,'%s'],['END',22,'%s']],**kwargs)
-        for igap in xrange(self.ngap):
+        for igap in range(self.ngap):
             cp(self._gaps[igap],self._ctime[igap*2],self._ctime[igap*2+1])
         del cp
 
@@ -1193,14 +1202,14 @@ class Gaps(cdms.tvariable.TransientVariable):
             - *title*: Use this title for the figure
         """
         if not self.ngap:
-            print 'No gaps to plot'
+            print('No gaps to plot')
             return
-        from plot import xdate,P
+        from .plot import xdate,P
         if self._toplot is None:
             self._toplot = [0,]
             self._times = [self._bounds[0]]
             times = mpl(self.getTime())
-            for igap in xrange(self.ngap):
+            for igap in range(self.ngap):
                 self._toplot.extend([0,1,1,0])
                 self._times.extend([times[igap*2]]*2)
                 self._times.extend([times[igap*2+1]]*2)
@@ -1390,7 +1399,7 @@ def reduce_old(data, comp=True, fast=True):
     Return: The new variable on its new time axis.
     """
 
-    from grid.misc import set_grid
+    from .grid.misc import set_grid
 
     assert data.getTime() is not None, 'Your data must have a valid time axis'
 
@@ -1455,7 +1464,7 @@ def reduce_old(data, comp=True, fast=True):
     if fast:
         adata = MV2.masked_object(adata,missing_value)
     adata.setAxis(0,atime)
-    for i in xrange(1,data.rank()):
+    for i in range(1,data.rank()):
         adata.setAxis(i,data.getAxis(i))
     if data.getGrid() is not None:
         set_grid(adata,data.getGrid())
@@ -1548,7 +1557,7 @@ def hourly_exact(data,time_units=None,maxgap=None, ctlims=None):
         - *maxgap*: Maximal gap in hours to enable interpolation [default: None].
     """
 
-    from grid.misc import set_grid
+    from .grid.misc import set_grid
 
     # Check time
     taxis = data.getTime()
@@ -1620,7 +1629,7 @@ def hourly_exact(data,time_units=None,maxgap=None, ctlims=None):
         else: # Linear interpolation
             v0 = data[it0]
             v1 = data[it1]
-            hdata[ith] = v0 + (v1-v0) * (th-t0) / (t1-t0)
+            hdata[ith] = v0 + old_div((v1-v0) * (th-t0), (t1-t0))
             ith += 1
         it0 = it1
 
@@ -1637,7 +1646,7 @@ def trend(var):
     """Get linear trend"""
 
     from genutil.statistics import linearregression
-    from grid.misc import set_grid
+    from .grid.misc import set_grid
 
     # Expansion of first axis
     tt = MV2.array(var.getAxis(0).getValue(),typecode=var.dtype.char)
@@ -1654,7 +1663,7 @@ def trend(var):
     cp_atts(var,var_trend)
     var_trend.id = var.id+'_trend'
     var_trend.name = var_trend.id
-    if var_trend.attributes.has_key('long_name'):
+    if 'long_name' in var_trend.attributes:
         var_trend.long_name = 'Linear trend of '+var_trend.long_name
     var_trend.setAxisList(var.getAxisList())
     set_grid(var_trend,var.getGrid())
@@ -1665,13 +1674,13 @@ def trend(var):
 def detrend(var):
     """Linear detrend"""
 
-    from grid.misc import set_grid
+    from .grid.misc import set_grid
 
     var_detrend = var - trend(var)
     cp_atts(var,var_detrend)
     var_detrend.id = 'detrended_'+var.id
     var_detrend.name = var_detrend.id
-    if var_detrend.attributes.has_key('long_name'):
+    if 'long_name' in var_detrend.attributes:
         var_detrend.long_name = 'Detrended '+var_detrend.long_name
     var_detrend.setAxisList(var.getAxisList())
     set_grid(var_detrend,var.getGrid())
@@ -1779,7 +1788,7 @@ def tz_to_tz(mytime, old_tz, new_tz, copy=True):
         # Guess type
         typeback = time_type(mytime,  out='func')
         if typeback is None:
-            raise TypeError, 'Time of wrong type: %s'%mytime
+            raise TypeError('Time of wrong type: %s'%mytime)
         if typeback == reltime:
             myUnits = mytime.units
         dt = datetime(mytime)
@@ -1821,7 +1830,7 @@ def tzname_to_tz(mytzname):
     for name in all_timezones:
         tz = timezone(name)
         if not hasattr(tz, '_tzinfos'): continue
-        for (utcoffset, daylight, tzname), _ in tz._tzinfos.iteritems():
+        for (utcoffset, daylight, tzname), _ in tz._tzinfos.items():
             if tzname == mytzname:
                 return tz
 
@@ -2167,7 +2176,7 @@ def reduce(vari, geterr=False, **kwargs):
 
     """
 
-    from grid.misc import set_grid
+    from .grid.misc import set_grid
 
     # Inits
     taxis = vari.getTime()
@@ -2279,7 +2288,7 @@ def add_margin(interval, lmargin, rmargin=None):
                 if margin==0:
                     newmargin = 0, 'seconds'
                 else:
-                    newmargin = (dt/margin, 'seconds')
+                    newmargin = (old_div(dt,margin), 'seconds')
             elif not isinstance(margin, (tuple, list)) and len(margin)<2 and \
                 (not isinstance(margin[0], (int, float) or not isinstance(margin[1], basestring))):
                 raise VACUMMError('Wrong time margin')
@@ -2331,7 +2340,7 @@ class Intervals(object):
         if isNumberType(dt):
             units = 'seconds since 2000'
             dt = (
-                (end_date.torel(units).value-start_date.torel(units).value)/dt,
+                old_div((end_date.torel(units).value-start_date.torel(units).value),dt),
                 'second')
         elif isinstance(dt, list):
             dt = tuple(dt)
@@ -2380,7 +2389,7 @@ class Intervals(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         # Iterator is consumed
         if self._current_date == self._last_date:
             raise StopIteration
@@ -2436,7 +2445,7 @@ class IterDates(object):
         if isNumberType(dt):
             units = 'seconds since 2000'
             dt = (
-                (end_date.torel(units).value-start_date.torel(units).value)*1./dt,
+                old_div((end_date.torel(units).value-start_date.torel(units).value)*1.,dt),
                 'second')
         elif not isinstance(dt, tuple):
             dt = (1, dt)
@@ -2471,7 +2480,7 @@ class IterDates(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         # Next date
         if self._current_date is None:
             next_date = self._first_date
@@ -2520,7 +2529,7 @@ def time_split(what, how, roundit=None, bb='co'):
         what = list(what[:2])
     what = comptime(what)
     if not isinstance(what, list):
-        raise TypeError, "Can't split a single date"
+        raise TypeError("Can't split a single date")
     tmin = min(what)
     tmax = max(what)
     tminmax = (tmin, tmax, bbw)
@@ -2551,9 +2560,9 @@ def time_split(what, how, roundit=None, bb='co'):
                 if (tmin.torel(tu).value <= how[0].torel(tu).value and
                         tmax.torel(tu).value >= how[0].torel(tu).value):
                     how = [tmin, how, tmax]
-            how = [(how[i], how[i+1], 'co') for i in xrange(len(how)-1)]
+            how = [(how[i], how[i+1], 'co') for i in range(len(how)-1)]
     else:
-        raise TypeError, "Can't recognize the split specification"
+        raise TypeError("Can't recognize the split specification")
 
     # Checks
     itvs = []
@@ -2568,10 +2577,10 @@ def time_split(what, how, roundit=None, bb='co'):
 def time_split_nmax(what, nmax, roundit=True):
     """Smartly split an interval with a length into subintervals of max length"""
     if isinstance(what, tuple):
-        raise TypeError, "Please provide a time axis, a list of dates, or IterDates or Intervals iterators."
+        raise TypeError("Please provide a time axis, a list of dates, or IterDates or Intervals iterators.")
     ctimes = comptime(what)
     if not isinstance(ctimes, list):
-        raise TypeError, "Can't split a single date"
+        raise TypeError("Can't split a single date")
     if len(ctimes) < nmax:
         return ctimes[0], ctimes[-1]
     taxis = create_time(ctimes)
@@ -2709,7 +2718,7 @@ class _LH_(object):
 
 def _d2sel_(taxis, dsel):
     """Extract time selections from a dict"""
-    return [sel for key,sel in dsel.items()
+    return [sel for key,sel in list(dsel.items())
         if key in (['time', taxis.id]+cdms2.convention.time_aliases)
             and sel is not None]
 
@@ -2947,7 +2956,7 @@ def tic():
     """
     import time as tc
     stime = tc.clock()
-    print tc.asctime()
+    print(tc.asctime())
     return stime
 
 def toc(stime=0.):
@@ -2972,11 +2981,11 @@ def toc(stime=0.):
     r = tc.clock()-stime
     if r > 60:
         if r > 3600:
-            print (r/3600), "hours"
+            print((old_div(r,3600)), "hours")
         else:
-            print (r/60), " minutes"
+            print((old_div(r,60)), " minutes")
     else:
-        print tc.clock()-stime, " seconds"
+        print(tc.clock()-stime, " seconds")
 
 
 def interp_clim(clim, times, method='linear', day=15):
@@ -2990,7 +2999,7 @@ def interp_clim(clim, times, method='linear', day=15):
     months = N.array([ct.month for ct in ctimes])
     years = N.array([ct.year for ct in ctimes])
     atts = get_atts(clim)
-    cmonths = range(1, 13)
+    cmonths = list(range(1, 13))
     cyears = [0]*12
 
     left_extent = 0
@@ -3039,7 +3048,7 @@ def interp_clim(clim, times, method='linear', day=15):
 #####################################################################
 ######################################################################
 
-import grid as G
+from . import grid as G
 from .axes import istime,check_axes,check_axis,create_time, isaxis
 from .misc import (cp_atts,isnumber,kwfilter,split_selector, filter_selector,
     get_atts, set_atts)

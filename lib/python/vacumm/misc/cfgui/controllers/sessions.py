@@ -102,7 +102,7 @@ class SessionsController(Object):
             self.notice('Loading sessions from %r', path)
             try:
                 self.sessions = Sessions.from_xml_file(path)
-            except Exception, e:
+            except Exception as e:
                 self.exception('Load sessions failed: %s', e)
 
         if self.sessions is None:
@@ -119,7 +119,7 @@ class SessionsController(Object):
 
         try:
             rollover(path, self.application.preferences_controller.preferences.backup_count)
-        except Exception, e:
+        except Exception as e:
             self.exception('Rollover of file %r failed: %s', path, e)
 
         mkfdirs(path)

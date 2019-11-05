@@ -29,10 +29,10 @@ class element:
     def __init__( self, tag, case='lower', parent=None ):
         self.parent = parent
 
-	if case == 'lower':
-	    self.tag = tag.lower( )
-	else:
-	    self.tag = tag.upper( )
+        if case == 'lower':
+            self.tag = tag.lower( )
+        else:
+            self.tag = tag.upper( )
     
     def __call__( self, *args, **kwargs ):
         if len( args ) > 1:

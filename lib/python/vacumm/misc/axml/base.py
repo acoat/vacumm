@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 """XML utilities"""
+from __future__ import print_function
 # Copyright or © or Copr. Actimar/IFREMER (2010-2015)
 #
 # This software is a computer program whose purpose is to provide
@@ -35,6 +36,7 @@
 
 
 #from elementtree import ElementTree as ET
+from builtins import str
 from xml.etree import ElementTree as ET
 
 import operator,os, copy
@@ -85,7 +87,7 @@ def serialize(value, formatter=None, pure_string=False):
     if formatter is not None:
         return formatter(value)
     # Unicode string case
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         if not pure_string:
             try:
                 tmp = '"%s"'%value
@@ -120,7 +122,7 @@ def isloadable(toload):
     """Check if toload is can be laoded into an xml node"""
     # Direct loading or file loading
     if toload is None or ET.iselement(toload) or isinstance(toload, file): return True
-    if isinstance(toload, (str, unicode)):
+    if isinstance(toload, str):
         # *ml path file
         if os.path.exists(toload) and toload.endswith('ml'): return True
         # xml like string
@@ -145,7 +147,7 @@ class Base(ET._ElementInterface,ET.ElementTree, object):
 
         # Scan attributes
         initial_values = {}
-        for att, val in attrib.items():
+        for att, val in list(attrib.items()):
             # Check if real attributes
             set_param = 'set_'+att
             if hasattr(self, set_param) and callable(getattr(self, set_param)):
@@ -155,7 +157,7 @@ class Base(ET._ElementInterface,ET.ElementTree, object):
             else:
                 # Simple attribute converted to string
                 attrib[att] = check_unicode(attrib[att])
-                if not isinstance(attrib[att], unicode):
+                if not isinstance(attrib[att], str):
                     attrib[att] = str(attrib[att])
 
         # First: create an empty element
@@ -164,34 +166,34 @@ class Base(ET._ElementInterface,ET.ElementTree, object):
 
         # Second: try to load something into an temporary element
         if toload is None: # Nothing ot load, except default parameters
-            for met, val in initial_values.items(): met(val)
+            for met, val in list(initial_values.items()): met(val)
             return
         else:# We want unicode
             toload = check_unicode(toload)
         if ET.iselement(toload):
             # Load directly from a element
-            print 'xml from element'
+            print('xml from element')
             assert self.tag == toload.tag, _msg_badtag % (toload.tag,self.tag)
             tmp_element = copy.copy(toload)
 
-        elif (isinstance(toload, unicode) and os.path.exists(toload)) or isinstance(toload, file):
+        elif (isinstance(toload, str) and os.path.exists(toload)) or isinstance(toload, file):
             # Load from a file
-            print 'xml from file'
+            print('xml from file')
             tmp_element = ET.parse(toload).getroot()
 
-        elif isinstance(toload, unicode):
+        elif isinstance(toload, str):
             # Load from a string
-            print 'xml from string'
+            print('xml from string')
             tmp_element = ET.fromstring(toload)
 
         else:
-            raise TypeError, "Cant load nothing else but a element, a file name or descriptor, or a xml string."
+            raise TypeError("Cant load nothing else but a element, a file name or descriptor, or a xml string.")
 
         # Third: copy text, children and attributes
         self.text = tmp_element.text
-        for att, val in tmp_element.attrib.items():
+        for att, val in list(tmp_element.attrib.items()):
             val = check_unicode(val)
-            if not isinstance(val, unicode):
+            if not isinstance(val, str):
                 tmp_element.attrib[att] = str(val)
         self.attrib.update(tmp_element.attrib)
         for child in tmp_element:
@@ -202,7 +204,7 @@ class Base(ET._ElementInterface,ET.ElementTree, object):
         self._load_()
 
         # Finally load initial values
-        for met, val in initial_values.items(): met(val)
+        for met, val in list(initial_values.items()): met(val)
 
     def append(self, element):
         """Append a child to this node"""

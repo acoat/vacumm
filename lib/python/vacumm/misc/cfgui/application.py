@@ -34,6 +34,7 @@
 # knowledge of the CeCILL license and that you accept its terms.
 #
 
+from past.builtins import basestring
 import argparse, os, signal, sys, traceback
 from PyQt4 import QtCore, QtGui
 
@@ -78,7 +79,7 @@ class Application(Object):
         self.main_controller = MainController(self)
 
         # Setup plugins
-        for name, plugin in self.plugins.items():
+        for name, plugin in list(self.plugins.items()):
             self.verbose('Enabling plugin %s', name)
             plugin.enable()
 
@@ -92,7 +93,7 @@ class Application(Object):
                 self.load_session(Session(specification_file=args.spcfile, configuration_file=args.cfgfile))
             else:
                 self.load_session(self.create_session())
-        except Exception, e:
+        except Exception as e:
             msg = 'Error loading session: %s'%e
             self.exception(msg)
             error_dialog(msg, detail=traceback.format_exc(e))
@@ -119,7 +120,7 @@ class Application(Object):
         session = Session(*args, **kwargs)
         self.info('Created session:\n%s', session.to_xml_str())
 
-        for name, plugin in self.plugins.items():
+        for name, plugin in list(self.plugins.items()):
             if plugin.enabled:
                 plugin.session_created(session)
             else:
@@ -190,14 +191,14 @@ class Application(Object):
 
     def signal_handler(self, signum, frame):
         try:
-            signame = ', '.join(map(lambda (k,v): k, filter(lambda (k,v): k.startswith('SIG') and v==signum, signal.__dict__.items())))
+            signame = ', '.join([k_v1[0] for k_v1 in [k_v for k_v in list(signal.__dict__.items()) if k_v[0].startswith('SIG') and k_v[1]==signum]])
             self.info('Signal handled signum: %s (%s)', signum, signame)
             if signum == signal.SIGINT: self.quit()
             elif signum == signal.SIGTERM: self.quit()
             elif signum == signal.SIGHUP: pass
             elif signum == signal.SIGUSR1: pass
             elif signum == signal.SIGUSR2: pass
-        except Exception, e:
+        except Exception as e:
             self.exception(e)
 
 

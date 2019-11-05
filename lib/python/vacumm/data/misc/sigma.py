@@ -34,6 +34,14 @@
 # knowledge of the CeCILL license and that you accept its terms.
 #
 
+from __future__ import division
+from __future__ import print_function
+from builtins import map
+from builtins import str
+from builtins import range
+from past.builtins import basestring
+from builtins import object
+from past.utils import old_div
 __author__ = 'Stéphane Raynaud'
 __email__ = 'raynaud@actimar.fr'
 
@@ -224,7 +232,7 @@ class NcSigma(object):
         nfo = NcFileObj(f)
         f = nfo.f
         targets = [(dimname, f.getAxis(dimname)) for dimname in f.listdimension()]
-        targets += [var for var in f.variables.items()]
+        targets += [var for var in list(f.variables.items())]
         levelvars = {}
         valid_sigcls = None
         for name,var in targets:
@@ -271,8 +279,8 @@ class NcSigma(object):
     def _load_names_(cls, f):
         """Store netcdf names of variables according to :attr:`standard_names` into :attr:`names`"""
         targets = [(dimname, f.getAxis(dimname)) for dimname in f.listdimension()]
-        targets += [var for var in f.variables.items()]
-        for name, standard_names in cls.standard_names.items():
+        targets += [var for var in list(f.variables.items())]
+        for name, standard_names in list(cls.standard_names.items()):
             if not isinstance(standard_names, list):
                 standard_names = [standard_names]
             for ncname,ncvar in targets:
@@ -313,7 +321,7 @@ class NcSigma(object):
 
         # String from file
         formula_terms_from_file = {}
-        for at_, levelvar in self.levelvars.items():
+        for at_, levelvar in list(self.levelvars.items()):
             if at and at!=at_:
                 continue
             formula_terms_from_file[at_] = getattr(levelvar, "formula_terms", {})
@@ -352,7 +360,7 @@ class NcSigma(object):
 
         # Final check
         if (not self.formula_terms or
-                not any([bool(ct) for ct in self.formula_terms.values()])):
+                not any([bool(ct) for ct in list(self.formula_terms.values())])):
             vcwarn('No formula term currently loaded')
 
     @staticmethod
@@ -362,7 +370,7 @@ class NcSigma(object):
         if not isinstance(formula_terms, (list,tuple)):
             formula_terms = re.split('[\W]+', formula_terms)
         ft = {}
-        for i in xrange(len(formula_terms)/2):
+        for i in range(old_div(len(formula_terms),2)):
             try:
                 ft[formula_terms[i*2]] = formula_terms[i*2+1]
             except:
@@ -390,7 +398,7 @@ class NcSigma(object):
         selector = as_selector(selector)
         ss = self._serialize_selector_(selector=selector,
             lons=lons, lats=lats, times=times)
-        if not self._cache.has_key(name):
+        if name not in self._cache:
             self._cache[name] = [None,None]
         if self._cache[name][0] is ss and self._cache[name][0] is not None:
             return self._cache[name][1]
@@ -435,7 +443,7 @@ class NcSigma(object):
 
             # Selector
             atype = axis_type(var, genname=True)[:3]
-            for sname, sel in split_selector(selector)[1].items():
+            for sname, sel in list(split_selector(selector)[1].items()):
                 if sname==var.id or (atype is not None and atype==sname[:3]):
                     if not isinstance(sel, slice):
                         ijk = var.mapIntervalExt(sel)
@@ -445,8 +453,8 @@ class NcSigma(object):
             return var
 
         # Variable
-        Variables = self.f.variables.keys()
-        variables = map(string.lower, Variables)
+        Variables = list(self.f.variables.keys())
+        variables = list(map(string.lower, Variables))
         if ncname.lower() in variables:
             ncname = Variables[variables.index(ncname.lower())]
             not_scalar = self.f[ncname].shape
@@ -466,8 +474,8 @@ class NcSigma(object):
             return var
 
         # Attribute
-        Attributes = self.f.attributes.keys()
-        attributes = map(string.lower, Attributes)
+        Attributes = list(self.f.attributes.keys())
+        attributes = list(map(string.lower, Attributes))
         if ncname.lower() in attributes:
             ncname = Attributes[attributes.index(ncname.lower())]
         return self.f.attributes.get(ncname, None)
@@ -661,7 +669,7 @@ class NcSigma(object):
         refloc = cfgname.split('/')[1]
         try:
             return dz2depths(dz, ref, refloc=refloc, zerolid=zerolid)
-        except Exception, e:
+        except Exception as e:
             raise SigmaError(msg+': '+format_exc())
 
     def update_file(self, newncfile, close=False):
@@ -764,7 +772,7 @@ class NcSigmaStandard(NcSigma):
                 return sigma2depths(self.sigma[at], depth, eta, stype=self.stype,
                     copyaxes=copyaxes, zerolid=zerolid)
 
-            except Exception, e:
+            except Exception as e:
 
                 if isinstance(e, KeyError):
                     msg = "can't compute it at %s location"%e.message
@@ -780,7 +788,7 @@ class NcSigmaStandard(NcSigma):
         try:
             return self.dz_to_depths(at=at, copyaxes=copyaxes,
                 zerolid=zerolid, **kwsel)
-        except SigmaError, e:
+        except SigmaError as e:
             if mode=='auto':
                 raise SigmaError("Can't compute depths from layer thicknesses or sigma coordinates")
             else:
@@ -868,7 +876,7 @@ class NcSigmaStandard(NcSigma):
                 return sigma2altitudes(self.sigma[at], height, oro, stype=self.stype,
                     copyaxes=copyaxes, zerolid=zerolid)
 
-            except Exception, e:
+            except Exception as e:
 
                 if isinstance(e, KeyError):
                     msg = "can't compute it at %s location"%e.message
@@ -1068,7 +1076,7 @@ class  NcSigmaGeneralized(NcSigma):
                     cs=self.cs[atz], depth_c=depth_c, a=self.a, b=self.b,
                     copyaxes=copyaxes, zerolid=zerolid)
 
-            except Exception, e:
+            except Exception as e:
 
                 if isinstance(e, KeyError):
                     msg = "can't compute it at %s location"%e.message
@@ -1084,7 +1092,7 @@ class  NcSigmaGeneralized(NcSigma):
         try:
             return self.dz_to_depths(at=at, copyaxes=copyaxes,
                 zerolid=zerolid, **kwsel)
-        except SigmaError, e:
+        except SigmaError as e:
             if mode=='auto':
                 raise SigmaError("Can't compute depths from layer thicknesses or sigma coordinates")
             else:
@@ -1170,15 +1178,15 @@ def sigma2depths(sigma, depth, eta=None, stype='standard',
                 raise SigmaError('You must prodive depth_c, and b '
                     'parameters for sigma generalized coordinates conversions')
 
-            cs = ((1-b)*N.sinh(a*sigma)/math.sinh(a) +
-                b * (N.tanh(a*(sigma+.5))-math.tanh(.5*a)) /
-                (2*math.tanh(.5*a)))
+            cs = (old_div((1-b)*N.sinh(a*sigma),math.sinh(a)) +
+                old_div(b * (N.tanh(a*(sigma+.5))-math.tanh(.5*a)),
+                (2*math.tanh(.5*a))))
 
         dd = depth-depth_c
 
     # Time loop
-    for it in xrange(nt):
-        for iz in xrange(nz):
+    for it in range(nt):
+        for iz in range(nz):
 
             # Sigma generalized
             if stype == 2:
@@ -1291,8 +1299,8 @@ def sigma2altitudes(sigma, height, oro, stype='standard',
 #        dd = depth-depth_c
 
     # Time loop
-    for it in xrange(nt):
-        for iz in xrange(nz):
+    for it in range(nt):
+        for iz in range(nz):
 
             # Sigma generalized
             if stype == 2:
@@ -1307,7 +1315,7 @@ def sigma2altitudes(sigma, height, oro, stype='standard',
 
             else:
                 # Common base
-                altitudes[it, iz] = sigma[iz] / height * (height - orom[it]) + orom[it]
+                altitudes[it, iz] = old_div(sigma[iz], height * (height - orom[it])) + orom[it]
 
         if not withtime:
             altitudes = altitudes[0]
@@ -1419,4 +1427,4 @@ def as_selector(select=None):
 
 if __name__=='__main__':
     a=cdms2.selectors.Selector((7,4),time=(5,6))
-    print selector2str(a)
+    print(selector2str(a))

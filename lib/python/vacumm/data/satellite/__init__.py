@@ -3,6 +3,7 @@
 Satellite tools
 
 """
+from __future__ import absolute_import
 # Copyright or © or Copr. Actimar/IFREMER (2010-2015)
 #
 # This software is a computer program whose purpose is to provide
@@ -36,7 +37,7 @@ Satellite tools
 # knowledge of the CeCILL license and that you accept its terms.
 #
 
-import satellite
+from . import satellite
 #import sst
 #import nar
 #import seviri

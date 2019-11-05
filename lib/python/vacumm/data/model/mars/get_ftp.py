@@ -3,6 +3,7 @@
 
 
 """
+from __future__ import print_function
 # Copyright or © or Copr. Actimar/IFREMER (2013-2015)
 #
 # This software is a computer program whose purpose is to provide
@@ -39,17 +40,20 @@
 #from ftplib import FTP
 
 # utile pour ftp.retrbinary
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 def handleDownload(block):
     file.write(block)
     #print ".",
 
 def get_ftp_f1(ctdeb, ctfin,andeb, SCRIPT_DIR, cfg=None):
-    import os,cdtime, subprocess, ConfigParser
-    print 'ftp cdoco en cours'
+    import os,cdtime, subprocess, configparser
+    print('ftp cdoco en cours')
     # connection au F1/F2 au CDOCO
 
     if cfg is None:
-      config = ConfigParser.RawConfigParser()
+      config = configparser.RawConfigParser()
       config.read(os.path.join(SCRIPT_DIR,'config.cfg'))
 
       if config.get('Model Description', 'name') == 'mars_manga':
@@ -125,11 +129,11 @@ def get_ftp_f1(ctdeb, ctfin,andeb, SCRIPT_DIR, cfg=None):
             full_filename = 'ftp://%(usr)s:%(pwd)s@%(filename)s' %vars()
 
 
-            print full_filename
+            print(full_filename)
             subprocess.call(["wget", full_filename])
 
         else:
-            print "No ftp copy needed : %(fic)s already exists."%vars()
+            print("No ftp copy needed : %(fic)s already exists."%vars())
 
         # Open the file for writing in binary mode
         #file = open(filename, 'wb')

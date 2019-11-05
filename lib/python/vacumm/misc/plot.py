@@ -4,6 +4,9 @@ Generic plots using Matplotlib and taking advantage of CDAT
 
 Tutorial: ":ref:`user.tut.misc.plot`".
 """
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 # Copyright or © or Copr. Actimar/IFREMER (2010-2015)
 #
 # This software is a computer program whose purpose is to provide
@@ -36,7 +39,15 @@ Tutorial: ":ref:`user.tut.misc.plot`".
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
 #
-import cPickle
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import map
+from builtins import zip
+from builtins import range
+from past.builtins import basestring
+from past.utils import old_div
+import pickle
 import re, os, glob
 from copy import copy
 from itertools import cycle
@@ -168,7 +179,7 @@ def traj(lons,lats,res=None,dots=True,color=True,m=None,zoom=.9,cmap=None,colorb
         kwmap = kwfilter(kwargs,'map',defaults=dict(lon=lon_range,lat=lat_range))
         kwmap['show'] = False
         kwmap['res'] = kwargs.pop('resolution',res)
-        m = map(**kwmap)
+        m = list(map(**kwmap))
 
     # Real coordinates
     xx,yy = m(lons,lats)
@@ -190,9 +201,9 @@ def traj(lons,lats,res=None,dots=True,color=True,m=None,zoom=.9,cmap=None,colorb
         mp.set_array(N.array(tt))
         ttmin = min(tt)
         dtt = max(tt)-ttmin
-        color = tuple([tuple(rgba) for rgba in mp.cmap((.5*(tt[:-1]+tt[1:])-ttmin)/dtt)])
+        color = tuple([tuple(rgba) for rgba in mp.cmap(old_div((.5*(tt[:-1]+tt[1:])-ttmin),dtt))])
         args = []
-        for ip in xrange(len(xx)-1):
+        for ip in range(len(xx)-1):
             args.extend([xx[ip:ip+2],yy[ip:ip+2]])
         lines = []
         for ip,line in enumerate(P.gca()._get_lines(*args,**kwargs)):
@@ -545,7 +556,7 @@ def _taylor_(stats, labels=False, colors=None, stdref=None, units=None, refcolor
         colors = N.resize(colors, (np,))
         if not scatter:
             colors = Scalar2RGB(colors, cmap)(colors)
-    for i in xrange(np):
+    for i in range(np):
         if colors[i] is None:
             colors[i] = 'k'
     sizes = N.asarray(broadcast(kwargs.pop('size', 8), np))
@@ -628,10 +639,10 @@ def _taylor_(stats, labels=False, colors=None, stdref=None, units=None, refcolor
             ax.add_patch(prms)
             prms.set_clip_on(True)
             prms.set_clip_path(arc)
-            xt = stdref[0]*r/rmax
-            yt = stdmax*r/rmax
+            xt = old_div(stdref[0]*r,rmax)
+            yt = old_div(stdmax*r,rmax)
             P.text(stdref[0]-xt, yt, ('%g'%r).ljust(4), color='r',
-                rotation=N.arctan2(xt, yt)*180./N.pi,
+                rotation=old_div(N.arctan2(xt, yt)*180.,N.pi),
                 va='center', ha='center', clip_on=True,
                 bbox=dict(facecolor='w', linewidth=0, alpha=.5))
 
@@ -655,17 +666,17 @@ def _taylor_(stats, labels=False, colors=None, stdref=None, units=None, refcolor
         for r in rticks:
             x1, y1 = xy(stdmax, r)
             x0, y0 = xy(stdmax*.98, r)
-            dxt = 12*x1/stdmax
-            dyt = 12*y1/stdmax
+            dxt = old_div(12*x1,stdmax)
+            dyt = old_div(12*y1,stdmax)
             P.plot([x0, x1], [y0, y1], 'k-', label=False)
             pcor = P.plot([0, x1], [0, y1], 'k--', linewidth=P.rcParams['grid.linewidth'], color='g')
             transoffset = offset_copy(ax.transData, fig=fig, x=dxt, y=dyt, units='points')
             P.text(x1, y1, ('%g'%r).ljust(4), va='center', ha='center',
                 transform = transoffset,
-                rotation=N.arccos(r)*180./N.pi + (r<0)*180.)
-        xt = yt = stdmax/N.sqrt(2.)
-        dxt = 29*xt/stdmax
-        dyt = 29*yt/stdmax
+                rotation=old_div(N.arccos(r)*180.,N.pi) + (r<0)*180.)
+        xt = yt = old_div(stdmax,N.sqrt(2.))
+        dxt = old_div(29*xt,stdmax)
+        dyt = old_div(29*yt,stdmax)
         transoffset = offset_copy(ax.transData, fig=fig, x=dxt, y=dyt, units='points')
         P.text(xt, yt, 'Correlation', va='center', ha='center',size=P.rcParams['axes.labelsize'],
                 transform = transoffset, rotation=-45.)
@@ -769,9 +780,9 @@ def dtarget(bias, rmsc, stdmod, stdref=None, colors='cyan', sizes=20,
     np = len(bias)
 
     # Make plotted stats
-    nrmsc = rmsc / stdref
+    nrmsc = old_div(rmsc, stdref)
     nrmsc *= N.sign(stdmod-stdref)
-    nbias = bias / stdref
+    nbias = old_div(bias, stdref)
 
     # Broadcast plot params
     if colors=='rms':
@@ -839,7 +850,7 @@ def rankhist(obs, ens, title='Rank histogram', bins=None, **kwargs):
     - **ens**, (nens,...): Ensemble or nens
 
     """
-    from stats import ensrank
+    from .stats import ensrank
     if isinstance(ens, int):
         rank, nens = obs, ens
     else:
@@ -884,7 +895,7 @@ def ellipsis(xpos,ypos,eAXIS,eaxis=None,rotation=0,
     """
 
     # Angles for discretization
-    pp = N.arange(0,2*N.pi,2*N.pi/np)
+    pp = N.arange(0,2*N.pi,old_div(2*N.pi,np))
     pp = N.concatenate((pp,pp[0:1])) # Closed
     np = len(pp)
 
@@ -897,7 +908,7 @@ def ellipsis(xpos,ypos,eAXIS,eaxis=None,rotation=0,
 
     # Map
     if m: gobj = m
-    from core_plot import Map
+    from .core_plot import Map
     if gobj is None:
         gobj = P.gca()
     elif isinstance(gobj, Map):
@@ -933,9 +944,9 @@ def ellipsis(xpos,ypos,eAXIS,eaxis=None,rotation=0,
     if axes:
         kwaxes = kwfilter(kwargs,'axes',
             defaults=dict(color='k',linestyle=':',alpha=.5))
-        for ea,ap in (eAXIS,0.),(eaxis,N.pi/2):
-            xaxis = N.array([-1,1]) * N.cos(rotation+ap) * ea/2
-            yaxis = N.array([-1,1]) * N.sin(rotation+ap) * ea/2
+        for ea,ap in (eAXIS,0.),(eaxis,old_div(N.pi,2)):
+            xaxis = old_div(N.array([-1,1]) * N.cos(rotation+ap) * ea,2)
+            yaxis = old_div(N.array([-1,1]) * N.sin(rotation+ap) * ea,2)
             if ismap and iscyl:
                 xaxis = m2deg(xaxis,ypos)
                 yaxis = m2deg(yaxis)
@@ -956,17 +967,17 @@ def ellipsis(xpos,ypos,eAXIS,eaxis=None,rotation=0,
             linewidth = lw = kwargs.pop('linewidth',P.rcParams['lines.linewidth'])
             color = cl = ColorConverter().to_rgb(kwargs.pop('color',P.rcParams['lines.color']))
             if sign > 0:
-                pps = range(0,np-1)
+                pps = list(range(0,np-1))
             else:
-                pps = range(np-2,-1,-1)
+                pps = list(range(np-2,-1,-1))
             factor = N.absolute(sign+1.)*3
             for ip in pps:
                 if sign_usewidth:
-                    lw = linewidth / factor + factor * linewidth * float(ip)/np
+                    lw = old_div(linewidth, factor) + old_div(factor * linewidth * float(ip),np)
                 if sign_usecolor:
-                    cl = (  (color[0]*ip+(np-ip)*.5)/(np-1),
-                            (color[1]*ip+(np-ip)*.5)/(np-1),
-                            (color[2]*ip+(np-ip)*.5)/(np-1))
+                    cl = (  old_div((color[0]*ip+(np-ip)*.5),(np-1)),
+                            old_div((color[1]*ip+(np-ip)*.5),(np-1)),
+                            old_div((color[2]*ip+(np-ip)*.5),(np-1)))
                 myplot = pcmd([xx[ip],xx[ip+1]],[yy[ip],yy[ip+1]],
                     linewidth=lw,color=cl,**kwargs)
         else:
@@ -999,8 +1010,8 @@ def ellipsis(xpos,ypos,eAXIS,eaxis=None,rotation=0,
 
         # Position
         rotation = rotation % N.pi
-        key_x = key_position * N.cos(rotation) * eAXIS/2
-        key_y = key_position * N.sin(rotation) * eaxis/2
+        key_x = old_div(key_position * N.cos(rotation) * eAXIS,2)
+        key_y = old_div(key_position * N.sin(rotation) * eaxis,2)
         ha = 'center' ; va = 'center'
         if key_align != 'top':
             key_x *= -1
@@ -1012,15 +1023,15 @@ def ellipsis(xpos,ypos,eAXIS,eaxis=None,rotation=0,
         key_y += ypos
         key_rotation = rotation
         if key_orientation == 'tangential':
-            key_rotation -= N.pi/2
+            key_rotation -= old_div(N.pi,2)
 
         # Params
-        for key, val in dict(color=myplot[0].get_color(),alpha=myplot[0].get_alpha(),
-            rotation=key_rotation*180./N.pi,va=va,ha=ha).items():
+        for key, val in list(dict(color=myplot[0].get_color(),alpha=myplot[0].get_alpha(),
+            rotation=old_div(key_rotation*180.,N.pi),va=va,ha=ha).items()):
             kwkey.setdefault(key, val)
 
         # Content
-        value = eA_orig/2
+        value = old_div(eA_orig,2)
         if units is None: units = ''
         key_text = key_format % vars()
 
@@ -1076,8 +1087,8 @@ def add_colorbar(var=None,sm=None,horizontal=False,position=None,cmap=None,drawe
         sm.set_array(N.array(levels))
 
     if sm is None:
-        raise 'Missing explicit arguments sm'
-    for key,val in kwargs.items():
+        raise Exception('Missing explicit arguments sm')
+    for key,val in list(kwargs.items()):
         if key not in ('close','show','savefig','units'):
             kwargs['colorbar_'+key] = kwargs.pop(key)
     cb = colorbar(sm,vars=var,drawedges=drawedges,levels=levels,colorbar_horizontal=horizontal,
@@ -1095,10 +1106,10 @@ def scolorbar(*args, **kwargs):
 def _plot_grid_(ax, xx, yy, samp, alpha, zorder, labels, **kwargs):
         lines = ()
         ny, nx = xx.shape
-        for iy in xrange(0, ny, samp):
-            lines += zip(xx[iy, ::samp], yy[iy, ::samp]),
-        for ix in xrange(0, nx, samp):
-            lines += zip(xx[::samp, ix], yy[::samp, ix]),
+        for iy in range(0, ny, samp):
+            lines += list(zip(xx[iy, ::samp], yy[iy, ::samp])),
+        for ix in range(0, nx, samp):
+            lines += list(zip(xx[::samp, ix], yy[::samp, ix])),
         oo = LineCollection(lines, **kwargs)
         oo.set_alpha(alpha)
         oo.set_zorder(zorder)
@@ -1382,7 +1393,7 @@ def _xydateold_(xy, tz=None, auto=True, fmt=None, rotation=None,
 ##  print 'xlimssss',P.gca(),ax
 ##  if ax.get_xlim() == (0.,1.): raise 'a'
     # Base
-    exec "ax.%saxis_date(tz)" % xy
+    exec("ax.%saxis_date(tz)" % xy)
 
     # Scale axes
     if auto:
@@ -1453,7 +1464,7 @@ def _xydateold_(xy, tz=None, auto=True, fmt=None, rotation=None,
         # Fix hourly locator to start at mindnight
         good = [2, 3, 4, 6, 8, 12]
         sampling = good[min(N.searchsorted(good, sampling), len(good)-1)]
-        byhour = range(0, 24, sampling)
+        byhour = list(range(0, 24, sampling))
         major_locator = set_major_locator(xy,HourLocator(byhour=byhour),**kwargs)
     major_unit = major_locator._get_unit()
 
@@ -1514,7 +1525,7 @@ def _xydateold_(xy, tz=None, auto=True, fmt=None, rotation=None,
         elif major_unit == 1: # Day
             for nmaj,itv in [5,2],[10,4],[nmax_ticks,6]:
                 if nticks <= nmaj:
-                    set_minor_locator(xy,HourLocator(byhour=range(0, 24, itv)),**kwargs)
+                    set_minor_locator(xy,HourLocator(byhour=list(range(0, 24, itv))),**kwargs)
                     break
         elif major_unit == 1./24.: # Hour
             for nmaj,itv in [5,10],[nmax_ticks,30]:
@@ -1547,7 +1558,7 @@ def _xydate_(xy, tz=None, auto=True, fmt='dual', rotation=None,
 ##  print 'xlimssss',P.gca(),ax
 ##  if ax.get_xlim() == (0.,1.): raise 'a'
     # Base
-    exec "axes.%saxis_date(tz)" % xy
+    exec("axes.%saxis_date(tz)" % xy)
 
     # Scale axes
     if auto:
@@ -1624,18 +1635,18 @@ def _xydate_(xy, tz=None, auto=True, fmt='dual', rotation=None,
 def get_locator_from_units(locator,*args,**kwargs):
     kw = {}
     reps = ['^interval$','^by']
-    for key,val in kwargs.items():
+    for key,val in list(kwargs.items()):
         for rep in reps:
             if re.search(rep,key) is not None:
                 kw[key] = val
     unit = locator._get_unit()
-    units = [365.,30.,7.,1.,1/24.,1/(24*60.),1/(24*3600.)]
+    units = [365.,30.,7.,1.,1/24.,old_div(1,(24*60.)),old_div(1,(24*3600.))]
     locs = [YearLocator,MonthLocator,WeekdayLocator,
         DayLocator,HourLocator,MinuteLocator,SecondLocator]
     loc = locs[units.index(unit)]
     if loc is HourLocator: # fix hour problem
         kw.setdefault('interval', 1)
-        kw['byhour'] = range(0, 24, kw['interval'])
+        kw['byhour'] = list(range(0, 24, kw['interval']))
         args = ()
     if loc is WeekdayLocator:
         args = (MO,)+args
@@ -1729,8 +1740,8 @@ def add_logo(logofile, axes=None, fig=None, loc='lower left', scale=None, alpha=
     else:
 
 
-        dx = nx/(P.gcf().get_figwidth()*dpi)
-        dy = ny/(P.gcf().get_figheight()*dpi)
+        dx = old_div(nx,(P.gcf().get_figwidth()*dpi))
+        dy = old_div(ny,(P.gcf().get_figheight()*dpi))
         if scale is not None:
             dx *= scale
             dy *= scale
@@ -1751,7 +1762,7 @@ def add_logo(logofile, axes=None, fig=None, loc='lower left', scale=None, alpha=
             y = 0
             anchor = 'S'
         else:
-            y = .5-dy/2
+            y = .5-old_div(dy,2)
             anchor = 'C'
         if 'right' in loc:
             x = 1-dx
@@ -1760,7 +1771,7 @@ def add_logo(logofile, axes=None, fig=None, loc='lower left', scale=None, alpha=
             x = 0
             anchor  = anchor + 'W'
         else:
-            x = .5-dx/2
+            x = .5-old_div(dx,2)
             anchor  = anchor + 'C'
         xc = x+dx/2.
         yc = y+dy/2.
@@ -1823,7 +1834,7 @@ def wedge(direction,width=18,fig=None,axes=None,figsize=(4,4),shadow=False,
     direction = (direction+180+360)%360.
     zorder = kwargs.pop('zorder',100)
     ww = Wedge((-r*1.1*N.cos(direction*N.pi/180.),-r*1.1*N.sin(direction*N.pi/180.)),2*r,
-        direction-width/2,direction+width/2,
+        direction-old_div(width,2),direction+old_div(width,2),
         **kwfilter(kwargs,['edgecolor','facecolor','linewidth','antialiased'],
             defaults=dict(facecolor=facecolor,linewidth=0)))
     ww.set_zorder(zorder)
@@ -1839,8 +1850,8 @@ def wedge(direction,width=18,fig=None,axes=None,figsize=(4,4),shadow=False,
 
     # Shadow
     if shadow:
-        dx = kwargs.pop('dx',r/10)
-        dy = -kwargs.pop('dy',r/10)
+        dx = kwargs.pop('dx',old_div(r,10))
+        dy = -kwargs.pop('dy',old_div(r,10))
         sdw = Shadow(ww,dx,dy,**kwfilter(kwargs,'shadow'))
         sdw.set_alpha(shadow_alpha)
         sdw.set_zorder(zorder-1)
@@ -1893,7 +1904,7 @@ def add_time_mark(date, ymin=0, ymax=1, color='r', line=True,
     res = []
     axis = ax.axis()
     if shadow:
-        from core_plot import add_shadow
+        from .core_plot import add_shadow
 
     # Line
     if line:
@@ -1939,7 +1950,7 @@ def add_key(key=None, pos=1, fmt='%s)', xmargin=10, ymargin=10, fig=None, axes=N
     """
     # Base
     if fig is None: fig = P.gcf()
-    if axes is None and kwargs.has_key('ax'): axes = kwargs.pop('ax')
+    if axes is None and 'ax' in kwargs: axes = kwargs.pop('ax')
     if axes is None: axes = fig.gca()
 
     # Text
@@ -1973,7 +1984,7 @@ def add_key(key=None, pos=1, fmt='%s)', xmargin=10, ymargin=10, fig=None, axes=N
     from matplotlib.transforms import ScaledTranslation
     xmargin = 1.*N.abs(xmargin)*(1 - 2*(pos in [-1, 2, -3, 4]))
     ymargin = 1.*N.abs(ymargin)*(1 - 2*(pos in [1, 2, -3, -4]))
-    transMargin = ScaledTranslation(xmargin/fig.dpi, ymargin/fig.dpi,
+    transMargin = ScaledTranslation(old_div(xmargin,fig.dpi), old_div(ymargin,fig.dpi),
         fig.dpi_scale_trans)
 
     # Add to plot
@@ -1993,7 +2004,7 @@ def hldays(color='.95', y=False, tmin=None, tmax=None, fig=None, axes=None, **kw
     """
     # Base
     if fig is None: fig = P.gcf()
-    if axes is None and kwargs.has_key('ax'): axes = kwargs.pop('ax')
+    if axes is None and 'ax' in kwargs: axes = kwargs.pop('ax')
     if axes is None: axes = fig.gca()
 
     # Bonds
@@ -2016,7 +2027,7 @@ def hldays(color='.95', y=False, tmin=None, tmax=None, fig=None, axes=None, **kw
     kwargs.setdefault('label', '_nolegend_')
     objs = []
     axspan = getattr(axes, 'ax%sspan'%'vh'[y])
-    for t in xrange(int(tmin), int(tmax)+1, 2):
+    for t in range(int(tmin), int(tmax)+1, 2):
         objs.append(axspan(t, t+1, **kwargs))
 #        objs[-1].set_zorder(0)
     getattr(axes, 'set_%slim'%'xy'[y])(tmin, tmax)
@@ -2030,7 +2041,7 @@ def xi2a(inch,data=None):
         xmin,xmax = P.gca().xaxis.get_data_interval().get_bounds()
     else:
         xmin,xmax = minmax(data) # data
-    trans = (xmax-xmin)/(P.gca().get_position().width*P.gcf().get_figwidth()) # inch to data
+    trans = old_div((xmax-xmin),(P.gca().get_position().width*P.gcf().get_figwidth())) # inch to data
     return  trans*inch # data units
 
 def yi2a(inch,data=None):
@@ -2039,16 +2050,16 @@ def yi2a(inch,data=None):
         ymin,ymax = P.gca().yaxis.get_data_interval().get_bounds()
     else:
         ymin,ymax = minmax(data) # data
-    trans = (ymax-ymin)/(P.gca().get_position().height*P.gcf().get_figheight()) # inch to data
+    trans = old_div((ymax-ymin),(P.gca().get_position().height*P.gcf().get_figheight())) # inch to data
     return  trans*inch # data units
 
 def yi2f(inch):
     """Convert from inch to relative height of figure"""
-    return inch/P.gcf().get_figheight()
+    return old_div(inch,P.gcf().get_figheight())
 
 def xi2f(inch):
     """Convert from inch to relative width of figure"""
-    return inch/P.gcf().get_figwidth()
+    return old_div(inch,P.gcf().get_figwidth())
 
 def gobjs(*args, **kwargs):
     """Store and retreive graphic objects of the current axes"""
@@ -2060,7 +2071,7 @@ def gobjs(*args, **kwargs):
             return ax.gobjs[arg]
         if isinstance(arg, dict):
             kwargs.update(arg)
-    for key, val in kwargs.items():
+    for key, val in list(kwargs.items()):
         ax.gobjs.setdefault(key, [])
         ax.gobjs[key].append(val)
     if not len(args) and not len(kwargs):
@@ -2100,7 +2111,7 @@ def savefigs(basename, png=True, pdf=False, verbose=True, dpi=100, nodots=True, 
             else:
                 fig.savefig(file, dpi=dpi)
             figfiles.append(file)
-            if verbose: print 'Wrote to '+file
+            if verbose: print('Wrote to '+file)
     return figfiles
 
 def make_movie(fig_pattern, outfile, delay=1, clean=False, verbose=False, windows=True):
@@ -2139,26 +2150,26 @@ def make_movie(fig_pattern, outfile, delay=1, clean=False, verbose=False, window
 
     # Execution
     import subprocess
-    if verbose: print 'Executing command: '+cmd
+    if verbose: print('Executing command: '+cmd)
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     out, err =  p.communicate()
     if verbose:
-        print out
-        print err
-    print 'ret', p.returncode,  err
+        print(out)
+        print(err)
+    print('ret', p.returncode,  err)
     if p.returncode:
         raise SystemError
 
 
     # Clean files
     if clean:
-        if verbose: print 'Cleaning files'
+        if verbose: print('Cleaning files')
         p = subprocess.Popen('rm -f %(fig_pattern)s'%vars(),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out,  err = p.communicate()
         if verbose:
-            print out
-            print err
+            print(out)
+            print(err)
         if p.returncode:
             raise SystemError
     return outfile
@@ -2245,7 +2256,7 @@ def _check_var_(var,rank,order=None,xaxis=None,yaxis=None,tadd=None,tadd_copy=Tr
                 pos = var.getOrder()[-rank:].rfind(c)
                 if pos > -1 and order[pos-rank] != '-' and order.find(c) == -1:
                     if i >= (var.rank()-rank-order.count('-')):
-                        print 'It seems that axis #%i (%s) of var should not be there and cannot be moved' % (i,c.upper())
+                        print('It seems that axis #%i (%s) of var should not be there and cannot be moved' % (i,c.upper()))
                     else:
                         var = var.reorder('-'*(var.rank()-i-1)+c+'-'*i)
                     i += 1
@@ -2310,7 +2321,7 @@ def _start_plot_(figure=None,figsize=None,subplot=None,subplots_adjust=None,bgco
     """
     subplots_adjust = kwargs.pop('sa', subplots_adjust)
     for adj in 'left', 'right', 'top', 'bottom', 'wspace', 'hspace':
-        if kwargs.has_key(adj):
+        if adj in kwargs:
             if subplots_adjust is None: subplots_adjust = {}
             subplots_adjust[adj] = kwargs.pop(adj)
     if fullscreen:
@@ -2425,7 +2436,7 @@ def colorbar(pp=None, vars=None, drawedges=False, levels=None, colorbar_horizont
 #           func = getattr(cb.ax,'set_%slabel'%xy)
             if units not in [True,None]:
                 cb.set_label(units, **kwlabel)
-            elif units is not False and cdms.isVariable(var) and var.attributes.has_key('units'):
+            elif units is not False and cdms.isVariable(var) and 'units' in var.attributes:
                 cb.set_label(var.units, **kwlabel)
         if isaxis(var):
             if istime(var):
@@ -2510,7 +2521,7 @@ def colorbar_new(sm=None, vars=None, drawedges=False, levels=None, horizontal=Fa
 #           func = getattr(cb.ax,'set_%slabel'%xy)
         if units not in [True,None]:
             cb.set_label(units, **kwlabel)
-        elif units is not False and cdms.isVariable(var) and var.attributes.has_key('units'):
+        elif units is not False and cdms.isVariable(var) and 'units' in var.attributes:
             cb.set_label(var.units, **kwlabel)
     if isaxis(var):
         if istime(var):
@@ -2546,7 +2557,7 @@ def _levels_(var,anomaly=None,levels=None,nmax=8,vmin=None,vmax=None,**kwargs):
         else:
             if anomaly is None:
                 mm = minmax(var)
-                anomaly = N.absolute((mm[1]-mm[0])/(.5*(mm[0]+mm[1]))) < .2
+                anomaly = N.absolute(old_div((mm[1]-mm[0]),(.5*(mm[0]+mm[1])))) < .2
             if anomaly:
                 mm = max(N.absolute(minmax(var)))
                 levels = auto_scale([-mm,mm],nmax=nmax)
@@ -2616,10 +2627,10 @@ def decorate_axis(axis=None,vertical=0,date_rotation=None,date_fmt=None,date_loc
         # - get it from cdms variable
         if cdms.isVariable(axis) and raw_att in vatts:
             kwvar = dict_aliases(kwfilter(kwargs, 'v', copy=1), raw_att)
-            if not kwargs.has_key(att) and kwvar.has_key(att):
+            if att not in kwargs and att in kwvar:
                 default = kwvar[att]
         # - special
-        if defaults.has_key(att):
+        if att in defaults:
             default = defaults[att]
 
         # Get attribute
@@ -2633,7 +2644,7 @@ def decorate_axis(axis=None,vertical=0,date_rotation=None,date_fmt=None,date_loc
     xy = 'xy'[vertical]
 
     # Functions
-    exec "tick_func = P.%(xy)sticks ; label_func = P.%(xy)slabel ; date_func = %(xy)sdate ; keyaxis = '%(xy)saxis' ; lim_func = P.%(xy)slim" % vars()
+    exec("tick_func = P.%(xy)sticks ; label_func = P.%(xy)slabel ; date_func = %(xy)sdate ; keyaxis = '%(xy)saxis' ; lim_func = P.%(xy)slim" % vars())
     funcs = {}
 
     # Limits
@@ -2646,13 +2657,13 @@ def decorate_axis(axis=None,vertical=0,date_rotation=None,date_fmt=None,date_loc
         axmin, axmax = minmax(values)
     if props['lim']:
         if isinstance(props['lim'],dict):
-            if props['lim'].has_key(xy+'min'):
+            if xy+'min' in props['lim']:
                 axmin = props['lim'][xy+'min']
-            elif props['lim'].has_key('min'):
+            elif 'min' in props['lim']:
                 axmin = props['lim']['min']
-            if props['lim'].has_key(xy+'max'):
+            if xy+'max' in props['lim']:
                 axmax = props['lim'][xy+'max']
-            elif props['lim'].has_key('max'):
+            elif 'max' in props['lim']:
                 axmax = props['lim']['max']
         else:
             axmin, axmax = props['lim']
@@ -2701,7 +2712,7 @@ def decorate_axis(axis=None,vertical=0,date_rotation=None,date_fmt=None,date_loc
             else:
                 nmonth = axis[-1] - axis[0] + 1
             if nmonth == 12 and int(axis.units.split()[2].split('-')[0]) == 1:
-                print "DETECTED PLOT OF CLIMATOLOGY"
+                print("DETECTED PLOT OF CLIMATOLOGY")
                 if date_rotation is None: date_rotation = 0.
                 if date_fmt is None: date_fmt = '%b'
                 if date_locator is None:
@@ -2738,11 +2749,11 @@ def decorate_axis(axis=None,vertical=0,date_rotation=None,date_fmt=None,date_loc
 
     # Hiding
     if props['hide'] in [True,False] and props['hide']:
-        exec xy+'hide()'
+        exec(xy+'hide()')
 
     # Label
     elif props['label'] is not False:
-        if isinstance(props['label'],(str, unicode)):
+        if isinstance(props['label'],str):
             label_func(props['label'], **props['label_kwargs'])
         elif props['type'] not in ['x','y','t','z']:
             ll = getattr(axis,'long_name','')
@@ -2751,7 +2762,7 @@ def decorate_axis(axis=None,vertical=0,date_rotation=None,date_fmt=None,date_loc
             slabel = []
             if ll and not cdms.isVariable(axis):
                 slabel.append(ll)
-            if isinstance(units, (str, unicode)) and units not in ['','-','None']:
+            if isinstance(units, str) and units not in ['','-','None']:
                 if len(slabel):
                     slabel.append('[%s]'%units)
                 else:
@@ -2813,7 +2824,7 @@ def _end_plot_(var=None,grid=True,figtext=None,show=True,close=False,savefig=Non
 #       if autoresize == 2: r *= rect.width/rect.height
         w,h = ax.get_figure().get_size_inches()
         a = 1.*w*h
-        W = N.sqrt(a/r)
+        W = N.sqrt(old_div(a,r))
         H = r*W
         P.gcf().set_size_inches(W,H)
         if anchor is None: anchor='C'
@@ -2833,7 +2844,7 @@ def _end_plot_(var=None,grid=True,figtext=None,show=True,close=False,savefig=Non
             P.title(title,**kwfilter(kwargs,'title'))
         elif var is not None:
             if isinstance(var,tuple): var = var[0]
-            if var.attributes.has_key('long_name'):
+            if 'long_name' in var.attributes:
                 gobjs(title=P.title(var.long_name,**kwfilter(kwargs,'title')))
 
     # Fig text
@@ -2867,7 +2878,7 @@ def _end_plot_(var=None,grid=True,figtext=None,show=True,close=False,savefig=Non
             elif backend in suff_standalone and not suff.lower().endwith(backend):
                 savefig += '.'+backend
         P.savefig(savefig,**kwfilter(kwargs,'savefig'))
-    if kwargs.has_key('savefigs'):
+    if 'savefigs' in kwargs:
         if kwargs['savefigs'] is not None:
             savefigs(kwargs['savefigs'], **kwfilter(kwargs, 'savefigs_'))
         else:
@@ -2879,7 +2890,7 @@ def _end_plot_(var=None,grid=True,figtext=None,show=True,close=False,savefig=Non
             'pdf':['/usr/bin/kghostview','/usr/bin/evince','/usr/bin/xpdf','/usr/local/bin/acroread'],
             'ps':['/usr/bin/kghostview','/usr/bin/evince','/usr/bin/ghostview'],
             'svg':['/usr/bin/svgdisplay','/usr/bin/konqueror']}
-        if backend in viewers.keys():
+        if backend in list(viewers.keys()):
             if savefig is None:
                 tmpfig = mktemp(suffix='.'+backend)
                 P.savefig(tmpfig,**kwfilter(kwargs,'savefig'))
@@ -2891,7 +2902,7 @@ def _end_plot_(var=None,grid=True,figtext=None,show=True,close=False,savefig=Non
                     try:
                         os.system(cmd)
                     except:
-                        print 'Unable to view file with command:',cmd
+                        print('Unable to view file with command:',cmd)
                     if savefig is None: os.remove(tmpfig)
                     return
         else:
@@ -3021,10 +3032,10 @@ def curve2(*args, **kwargs):
     :Extra: A few matplotlib plot arguments can be passed (for exemple: ``linewidths``).
 
     """
-    from core_plot import Curve
+    from .core_plot import Curve
     kwargs.setdefault('plot', True)
     kwargs.setdefault('post_plot', True)
-    if len(args)>1 and not kwargs.has_key('parg'):
+    if len(args)>1 and 'parg' not in kwargs:
         kwargs['parg'] = args[1]
         args = args[0:1]+args[2:]
     return Curve(*args, **kwargs)
@@ -3116,7 +3127,7 @@ def bar2(*args, **kwargs):
         {Plot_post_plot[close]}
 
     """
-    from core_plot import Bar
+    from .core_plot import Bar
     kwargs.setdefault('plot', True)
     kwargs.setdefault('post_plot', True)
     return Bar(*args, **kwargs)
@@ -3228,7 +3239,7 @@ def stick2(*args, **kwargs):
         {Plot_post_plot[close]}
 
     """
-    from core_plot import Stick
+    from .core_plot import Stick
     kwargs.setdefault('plot', True)
     kwargs.setdefault('post_plot', True)
     return Stick(*args, **kwargs)
@@ -3353,7 +3364,7 @@ def hov2(*args, **kwargs):
         - **Other generic params**: see :class:`~vacumm.misc.core_plot.Plot`.
 
     """
-    from core_plot import Hov
+    from .core_plot import Hov
     kwargs.setdefault('plot', True)
     kwargs.setdefault('post_plot', True)
     return Hov(*args, **kwargs)
@@ -3518,7 +3529,7 @@ def map2(*args, **kwargs):
 
 
 
-    from core_plot import Map
+    from .core_plot import Map
     kwargs.setdefault('plot', True)
     kwargs.setdefault('post_plot', True)
     if len(args)==0:
@@ -3646,7 +3657,7 @@ def section2(*args, **kwargs):
         - **Other generic params**: see :class:`~vacumm.misc.core_plot.Plot`.
 
     """
-    from core_plot import Section
+    from .core_plot import Section
     kwargs.setdefault('plot', True)
     kwargs.setdefault('post_plot', True)
     return Section(*args, **kwargs)
@@ -3776,7 +3787,7 @@ def plot2d(*args, **kwargs):
         - **Other generic params**: see :class:`~vacumm.misc.core_plot.Plot`.
 
     """
-    from core_plot import Plot2D
+    from .core_plot import Plot2D
     kwargs.setdefault('plot', True)
     kwargs.setdefault('post_plot', True)
     return Plot2D(*args, **kwargs)
@@ -3799,8 +3810,8 @@ def minimap(gg, bbox= [.85, .85, .14, .14], zoom=1., xmargin=None, ymargin=None,
 
     :Return: A :class:`~vacumm.misc.core_plot.Map` object.
     """
-    from grid import get_xy
-    from color import RGB
+    from .grid import get_xy
+    from .color import RGB
     data = gg if cdms2.isVariable(gg) else None
     x, y = get_xy(gg)
     if lon is not None:
@@ -3850,7 +3861,7 @@ def add_map_point(gg, lon, lat, marker='o', color='r', size=40,  m=None, alpha=1
     kwmap = kwfilter(kwargs, 'map')
     for att in 'bbox', 'bgcolor', 'fig':
         if att in kwargs: kwmap[att] = kwargs.pop(att)
-    from core_plot import Map
+    from .core_plot import Map
     if isinstance(gg, Map): m = gg
     if m is None: m = minimap(gg, **kwmap)
     return m.add_point(lon, lat, size=size, color=color, marker=marker, **kwargs)
@@ -3871,7 +3882,7 @@ def add_map_places(gg, lon, lat, txt, marker='o', color='r', size=40,  m=None,
     kwmap = kwfilter(kwargs, 'map')
     for att in 'bbox', 'bgcolor', 'fig':
         if att in kwargs: kwmap[att] = kwargs.pop(att)
-    from core_plot import Map
+    from .core_plot import Map
     if isinstance(gg, Map): m = gg
     if m is None: m = minimap(gg, **kwmap)
     for x,y,text in zip(lon,lat,txt):
@@ -3894,7 +3905,7 @@ def add_map_line(gg, extents, color='r', linewidth=1.5, m=None, **kwargs):
     kwmap = kwfilter(kwargs, 'map')
     for att in 'bbox', 'bgcolor', 'fig':
         if att in kwargs: kwmap[att] = kwargs.pop(att)
-    from core_plot import Map
+    from .core_plot import Map
     if isinstance(gg, Map): m = gg
     if m is None: m = minimap(gg, **kwmap)
     return m.add_line(extents, color=color, linewidth=linewidth, **kwargs)
@@ -3913,7 +3924,7 @@ def add_map_lines(gg, xx, yy, color='r', linewidth=1.5, m=None, closed=False, **
     kwmap = kwfilter(kwargs, 'map')
     for att in 'bbox', 'bgcolor', 'fig':
         if att in kwargs: kwmap[att] = kwargs.pop(att)
-    from core_plot import Map
+    from .core_plot import Map
     if isinstance(gg, Map): m = gg
     if m is None: m = minimap(gg, **kwmap)
     return m.add_lines(xx, yy, color=color, linewidth=linewidth, **kwargs)
@@ -3934,7 +3945,7 @@ def add_map_box(gg, box, color='r', linewidth=1.5, m=None, **kwargs):
     kwmap = kwfilter(kwargs, 'map')
     for att in 'bbox', 'bgcolor', 'fig':
         if att in kwargs: kwmap[att] = kwargs.pop(att)
-    from core_plot import Map
+    from .core_plot import Map
     if isinstance(gg, Map): m = gg
     if m is None: m = minimap(gg, **kwmap)
     return m.add_box(box, color=color, linewidth=linewidth, **kwargs)

@@ -34,6 +34,13 @@
 #
 
 from __future__ import absolute_import
+from __future__ import print_function
+from builtins import str
+from builtins import filter
+from builtins import map
+from builtins import range
+from past.builtins import basestring
+from builtins import object
 if __name__ == '__main__':
     import sys; del sys.path[0]
 
@@ -93,8 +100,8 @@ def _valwrap_(validator):
     validator._parse_with_caching(configspec[section][option])
     '''
     # Already wrapped
-    if (validator.func_name.startswith('validator_wrapper-') or
-        validator.func_name.startswith('list_validator_wrapper-')):
+    if (validator.__name__.startswith('validator_wrapper-') or
+        validator.__name__.startswith('list_validator_wrapper-')):
         return validator
 
     # Wrapper
@@ -106,7 +113,7 @@ def _valwrap_(validator):
         # Remove extraneous arguments the validator can't handle
         argspec = inspect.getargspec(validator)
         kwargs = kwargs.copy()
-        for k in kwargs.keys():
+        for k in list(kwargs.keys()):
             if k not in argspec.args:
                 kwargs.pop(k)
         return validator(value, *args, **kwargs)
@@ -127,7 +134,7 @@ def _valwraplist_(validator):
         - **shape**: check value shape (requires numpy)
     '''
     # Already wrapped
-    if validator.func_name.startswith('list_validator_wrapper-'):
+    if validator.__name__.startswith('list_validator_wrapper-'):
         return validator
 
     # Wrapper
@@ -166,17 +173,17 @@ def _valwraplist_(validator):
                 warn('Cannot check shape, numpy package is missing')
             else:
                 try:
-                    shape, vshape = map(int, shape), numpy.shape(value)
+                    shape, vshape = list(map(int, shape)), numpy.shape(value)
                     if vshape != shape:
                         raise VdtSizeError('Incorrect shape: %s, %s shape expected'%(vshape, shape))
-                except Exception, e:
+                except Exception as e:
                     raise ValidateError('Cannot test value shape, this may be caused by an irregular array-like shape. Error was:\n%s'%traceback.format_exc())
 
         # Preserve tuple type
         istuple = isinstance(value, tuple)
 
         # Validate each values
-        value = map(lambda v: validator(v, *args[1:], **kwargs), value)
+        value = [validator(v, *args[1:], **kwargs) for v in value]
         return tuple(value) if istuple else value
 
     list_validator_wrapper.__name__ += '-'+validator.__name__
@@ -190,7 +197,7 @@ def validator_bbox(value, default=None):
     # two possible delimiters: whitespaces and ','
     for v in value.split(): c.extend(v.split(','))
     if len(c) != 4: raise VdtTypeError(value)
-    return map(float, c)
+    return list(map(float, c))
 
 
 def validator_numerics(value, default=None, min=None, max=None, type='float', n=None):
@@ -297,7 +304,7 @@ def validator_datetime(value, default=None, fmt='%Y-%m-%dT%H:%M:%S'):
     if str(value) == 'None': return None
     if value == '': value = default
     try: return datetime.datetime.strptime(value, fmt)
-    except ValueError, e: raise VdtDateTimeError(e)
+    except ValueError as e: raise VdtDateTimeError(e)
 
 _re_validator_workdir_split_ = re.compile('\s*>\s*').split
 _re_validator_workdir_start_ =  re.compile('^[\[(]').search
@@ -486,7 +493,7 @@ def _update_registry_():
 
     # 1. Fix specs dicts
     # 2. Generate list validators
-    for k, v in VALIDATOR_SPECS.items():
+    for k, v in list(VALIDATOR_SPECS.items()):
 
         # Check type of spec
         if not isinstance(v, dict):
@@ -523,22 +530,22 @@ def _update_registry_():
     # List of names
     while VALIDATOR_TYPES:
         del VALIDATOR_TYPES[0]
-    VALIDATOR_TYPES.extend(VALIDATOR_SPECS.keys())
+    VALIDATOR_TYPES.extend(list(VALIDATOR_SPECS.keys()))
     VALIDATOR_TYPES.sort()
 
     # Dict of functions
-    for key in VALIDATOR_FUNCTIONS.keys():
+    for key in list(VALIDATOR_FUNCTIONS.keys()):
         del VALIDATOR_FUNCTIONS[key]
     VALIDATOR_FUNCTIONS.update(dict((k, v['func'])
-        for k,v in VALIDATOR_SPECS.items() if 'func' in v))
+        for k,v in list(VALIDATOR_SPECS.items()) if 'func' in v))
 
 _update_registry_()
 
 _for_doc = []
 for key in VALIDATOR_TYPES:
     spec = VALIDATOR_SPECS[key]
-    if not spec['func'].func_name.startswith('list_validator_wrapper'):
-        val = ':func:`{} <{}>`'.format(key, spec['base_func'].func_name)
+    if not spec['func'].__name__.startswith('list_validator_wrapper'):
+        val = ':func:`{} <{}>`'.format(key, spec['base_func'].__name__)
     else:
         val = ':func:`{}`'.format(key)
     _for_doc.append(val)
@@ -702,9 +709,9 @@ class ConfigManager(object):
         cfg.filename = cfgfile
         cfg.write()
         if verbose:
-            print 'Created default config file: %s'%cfgfile
+            print('Created default config file: %s'%cfgfile)
             if backup:
-                print "Backuped old config file to: %s.bak"%cfgfile
+                print("Backuped old config file to: %s.bak"%cfgfile)
         return cfg
 
     def load(self, cfgfile='config.cfg',
@@ -803,7 +810,7 @@ class ConfigManager(object):
                             continue
 
                         # Loop on keys
-                        keys = secd.keys() if key is None else [key]
+                        keys = list(secd.keys()) if key is None else [key]
                         for k in keys:
 
                             vdef = secd.get(k, None)
@@ -814,7 +821,7 @@ class ConfigManager(object):
                                 sec[k] = vdef
 
                     else: # Raise an error
-                        raise ValidateError, msg
+                        raise ValidateError(msg)
 
             if geterr:
                 return cfg, err
@@ -1144,7 +1151,7 @@ class ConfigManager(object):
             wrapper_option_type_checker.__name__ += '-'+func.__name__
             return wrapper_option_type_checker
         # Setup type checkers  into the new Option class
-        for name,func in self._validator.functions.items():
+        for name,func in list(self._validator.functions.items()):
             if name in option_class.TYPE_CHECKER:
                 pass # warn('Overriding Option type checker %s'%(name))
             islist = VALIDATOR_SPECS.get(name, {}).get('iterable', None)
@@ -1593,7 +1600,7 @@ def get_validator(functions=None):
         validator.functions.update(functions)
 
     # Wrap default functions to handle none and extra args
-    for k, v in validator.functions.items():
+    for k, v in list(validator.functions.items()):
         validator.functions[k] = _valwrap_(v)
 
     # This modules's validator functions are already wrapped
@@ -1620,7 +1627,7 @@ def _walker_unchanged_options_(sec, key):
 def remove_defaults(cfg):
     defaults = cfg.walk(_walker_unchanged_options_, call_on_sections=False)
     def remove(c, d):
-        for k,v in d.items():
+        for k,v in list(d.items()):
             if isinstance(v, dict):
                 remove(c[k], v)
             elif v:
@@ -1632,7 +1639,7 @@ def _walker_optcfg_setcfg_(sec, key, cfg=None, options=None, nested=None):
     # Find genealogy
     parents = _parent_list_(sec, names=False)
     cfgkey = '_'.join([p.name.strip('_') for p in parents]+[key])
-    for option, value in options.__dict__.items():
+    for option, value in list(options.__dict__.items()):
 
         # Option not set
         if value is None: continue
@@ -1643,7 +1650,7 @@ def _walker_optcfg_setcfg_(sec, key, cfg=None, options=None, nested=None):
         # Check or create cfg genealogy
         s = cfg
         for p in parents:
-            if not s.has_key(p.name):
+            if p.name not in s:
                 s[p.name] = {}
             s = s[p.name]
         s[key] = value
@@ -1695,7 +1702,7 @@ def _walker_argcfg_setcfg_(sec, key, cfg=None, options=None, nested=None):
         # Check or create cfg genealogy
         s = cfg
         for p in parents:
-            if not s.has_key(p.name):
+            if p.name not in s:
                 s[p.name] = {}
             s = s[p.name]
         s[key] = value
@@ -1760,8 +1767,8 @@ def _shelp_(sec, key, format='%(shelp)s [default: %(default)r]', mode='auto',
     # filter
     def strip(c):
         return c.strip().strip('#').strip()
-    abcoms = map(strip, filter(lambda c: c is not None, sec.comments[key]))
-    incoms = map(strip, filter(lambda c: c is not None, [sec.inline_comments[key]]))
+    abcoms = list(map(strip, [c for c in sec.comments[key] if c is not None]))
+    incoms = list(map(strip, [c for c in [sec.inline_comments[key]] if c is not None]))
 
 
     # Merge comments above item and its inline comment
@@ -1842,7 +1849,7 @@ def get_secnames(cfg):
     """Get section names as list from top to bottom ['sec0','sec1',...]"""
     if cfg.depth==0: return []
     secnames = [cfg.name]
-    for i in xrange(cfg.depth-1):
+    for i in range(cfg.depth-1):
         cfg = cfg.parent
         secnames.append(cfg.name)
     return secnames[::-1]
@@ -2020,7 +2027,7 @@ def _walker_cfg2rst_(cfg, key, lines, optrole='cfgopt', secrole='cfgsec',
             if spec['kwargs']:
                 specs.update(spec['kwargs'])
     if specs: # join lists
-        for k, v in specs.items():
+        for k, v in list(specs.items()):
             if isinstance(v, list):
                 specs[k] = ', '.join(map(str, v))
 
@@ -2034,7 +2041,7 @@ def _walker_cfg2rst_(cfg, key, lines, optrole='cfgopt', secrole='cfgsec',
     # - description with specs
     if specs:
         sdesc = ''
-        for key, val in specs.items():
+        for key, val in list(specs.items()):
             if val=='':
                 val = ' '
             sdesc = sdesc + desc_fmt_desc_item.format(**locals())
@@ -2068,7 +2075,7 @@ def print_short_help(parser, formatter=None, compressed=False):
         formatter.dedent()
         del result[-1]
         result.append(parser.format_epilog(formatter))
-        print "".join(result)
+        print("".join(result))
 
     elif isinstance(parser, ArgumentParser):
 
@@ -2089,7 +2096,7 @@ def print_short_help(parser, formatter=None, compressed=False):
                 for optstr in opt.option_strings:
                     if optstr in compressed:
                         return True
-            actions = filter(valid_option, parser._actions)
+            actions = list(filter(valid_option, parser._actions))
             actions.append(fake_action)
         else:
             actions = parser._actions
@@ -2160,6 +2167,6 @@ Options:
 #    --mars-version=MARS_VERSION
 #                        MARS version. [default: 'V8.11']
 #"""
-    print opt2rst(shelp)
+    print(opt2rst(shelp))
 
 

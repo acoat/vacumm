@@ -4,6 +4,7 @@
 
 
 """
+from __future__ import print_function
 # Copyright or © or Copr. Actimar/IFREMER (2013-2015)
 #
 # This software is a computer program whose purpose is to provide
@@ -37,13 +38,14 @@
 # knowledge of the CeCILL license and that you accept its terms.
 #
 
+from builtins import str
 import sys, os, shutil
 import cdtime
 
 def get_cp(ctdeb, ctfin, dir_f1, cfg=None):
 
     if cfg is None:
-        print 'Not implemented for a use without cfg/ini files.'
+        print('Not implemented for a use without cfg/ini files.')
     sys.exit()
 
     ctest = ctdeb
@@ -70,11 +72,11 @@ def get_cp(ctdeb, ctfin, dir_f1, cfg=None):
             filename=cfg['MARS F1']['fic_prefix']+'%4d%02d%02dT%02d00Z.nc' %(ctest.year,ctest.month,ctest.day,ctest.hour)
         if cfg['Model Description']['name'] == 'mars_menor':
             filename=cfg['MARS F2']['fic_prefix']+'%4d%02d%02dT%02d00Z.nc' %(ctest.year,ctest.month,ctest.day,ctest.hour)
-        print filename
+        print(filename)
 
         if os.path.isfile(filename) == False :
             shutil.copyfile(dir_f1+filename, filename)
-            print filename, 'doesn t exists'
+            print(filename, 'doesn t exists')
 
 
     # On incremente le temps "test" de 1 heure
@@ -107,11 +109,11 @@ def get_cp_f1(ctdeb, ctfin, dir_f1):
         #filename='PREVIMER_F1-MARS3D-MANGA_'+str(ctest.year)+str(ctest.month)+str(ctest.day)+'T'+hour+'00Z.nc'
         #A changer pour que le chemin d'accès ne soit plus en dur en reutilisable pour Mars Menor. A lire direct dans config.gfg.
         filename='PREVIMER_F1-MARS3D-MANGA4000_%4d%02d%02dT%02d00Z.nc' %(ctest.year,ctest.month,ctest.day,ctest.hour)
-        print filename
+        print(filename)
 
         if os.path.isfile(filename) == False :
             shutil.copyfile(dir_f1+filename, filename)
-            print filename, 'doesn t exists'
+            print(filename, 'doesn t exists')
 
 
     # On incremente le temps "test" de 1 heure
@@ -140,7 +142,7 @@ def get_cp_f2_v9(ctdeb, ctfin, dir_f2_v9):
         #filename='PREVIMER_F1-MARS3D-MANGA_'+str(ctest.year)+str(ctest.month)+str(ctest.day)+'T'+hour+'00Z.nc'
         #A changer pour que le chemin d'accès ne soit plus en dur en reutilisable pour Mars Menor. A lire direct dans config.gfg.
         filename='PREVIMER_F2-MARS3D-MENOR1200_%4d%02d%02dT%02d00Z.nc' %(ctest.year,ctest.month,ctest.day,ctest.hour)
-        print filename
+        print(filename)
 
         if os.path.isfile(filename) == False :
             shutil.copyfile(dir_f2_v9+filename, filename)

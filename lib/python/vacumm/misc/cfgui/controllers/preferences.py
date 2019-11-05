@@ -80,7 +80,7 @@ class PreferencesController(Object):
             self.notice('Loading preferences from %r', path)
             try:
                 self.preferences = Preferences.from_xml_file(path)
-            except Exception, e:
+            except Exception as e:
                 self.exception('Load preferences failed: %s', e)
 
         if self.preferences is None:
@@ -97,7 +97,7 @@ class PreferencesController(Object):
 
         try:
             rollover(path, self.preferences.backup_count)
-        except Exception, e:
+        except Exception as e:
             self.exception('Rollover of file %r failed: %s', path, e)
 
         mkfdirs(path)
